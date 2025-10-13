@@ -1,4 +1,4 @@
-#include "omp_intro.h"
+#include "gemm.h"
 
 int main() {
 	printf(GREEN "Starting the program\n" RESET);
