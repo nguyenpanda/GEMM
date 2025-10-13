@@ -1,0 +1,26 @@
+# Syncthing Ignore
+
+# --- directories ---
+.note
+
+# --- system/editor junk ---
+(?d).DS_Store
+.vscode
+
+# --- Python ---
+__pycache__
+.venv
+
+# --- git ---
+.git
+
+# --- build artifacts / binaries ---
+*.o
+*.a
+*.so
+*.dll
+*.dylib
+*.exe
+
+# --- build folders anywhere ---
+build
