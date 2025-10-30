@@ -4,6 +4,45 @@
 #include "gemm.h"
 #include <benchmark/benchmark.h>
 
+namespace elementwise_FloatArray {
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-parameter"
+
+class UnaryBufferFixture : public benchmark::Fixture {
+public:
+    void SetUp(const ::benchmark::State& state) override {
+        buffer = new float[state.range(0)];
+    }
+
+    void TearDown(const ::benchmark::State& state) override {
+		delete buffer;
+	}
+
+	float* buffer;
+};
+
+class BinaryFixture : public benchmark::Fixture {
+public:
+    void SetUp(const ::benchmark::State& state) override {
+        lhs = new float[state.range(0)];
+        rhs = new float[state.range(0)];
+        out = new float[state.range(0)];
+    }
+
+    void TearDown(const ::benchmark::State& state) override {
+		delete lhs;
+        delete rhs;
+        delete out;
+	}
+
+    float* lhs;
+    float* rhs;
+    float* out;
+};
+
+}
+
 namespace elementwise_Buffer {
 
 class UnaryBufferFixture : public benchmark::Fixture {
@@ -102,6 +141,8 @@ public:
     InitializeRandom<float>* initialize_random;
     InitializeConstant<float>* initialize_const;
 };
+
+#pragma clang diagnostic pop
 
 }; // namespace elementwise
 

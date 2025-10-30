@@ -40,21 +40,26 @@ def plot_ratio():
 
 if __name__ == '__main__':
     BM_Parser = BM_JsonParser(args.file)
-    BM_Parser.print_context({
+    BM_Parser.print_context([
         'date',
         'host_name',
         'load_avg',
-        'OMP_NUM_THREADS',
-        'OpenMP status',
-	})
+		'ADD_RECURSIVE_THRESHOLD',
+    	'MATMUL_ORDER',
+    	'MUL_RECURSIVE_THRESHOLD',
+    	'OMP_ENABLE',
+     	'OMP_NUM_THREADS',
+    	'PRECISION_MODE',
+    	'PRECISION_STATUS',
+	])
     
-    BM_Parser.parse({
+    BM_Parser.parse([
         'real_time',
         'cpu_time',
         'iterations',
         'time_unit',
         'N'
-	})
+	])
     
     Y_FEATURES = ['real_time', 'cpu_time']
     

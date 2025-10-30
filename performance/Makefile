@@ -10,28 +10,26 @@ LOGGING			:= $(DIR)/log
 OS				:= $(shell uname -s)
 
 # OpenMP
-ifeq ($(OMP_ENABLE), 1)
-	ifeq ($(OS), Darwin) # MacOS
-		OMP_CONFIG		:= $(ROOT)/lib/omp-config.exe
-		ifneq ("$(wildcard $(OMP_CONFIG))", "") # If exists
-			INCLUDES	+= $(shell $(OMP_CONFIG) --includes)
-			CXXFLAGS	+= $(shell $(OMP_CONFIG) --cflags)
-			LDFLAGS		+= $(shell $(OMP_CONFIG) --ldflags)
-		else
-			INCLUDES	+= -I/usr/local/opt/libomp/include
-			CXXFLAGS	+= -Xpreprocessor -fopenmp
-			LDFLAGS		+= -lomp -L/usr/local/opt/libomp/lib
-		endif
-	else # Linux distribution
-		CXXFLAGS	+= -fopenmp
-		LDFLAGS		+= -fopenmp
+ifeq ($(OS), Darwin) # MacOS
+	OMP_CONFIG		:= $(ROOT)/lib/omp-config.exe
+	ifneq ("$(wildcard $(OMP_CONFIG))", "") # If exists
+		INCLUDES	+= $(shell $(OMP_CONFIG) --includes)
+		CXXFLAGS	+= $(shell $(OMP_CONFIG) --cflags)
+		LDFLAGS		+= $(shell $(OMP_CONFIG) --ldflags)
+	else
+		INCLUDES	+= -I/usr/local/opt/libomp/include
+		CXXFLAGS	+= -Xpreprocessor -fopenmp
+		LDFLAGS		+= -lomp -L/usr/local/opt/libomp/lib
 	endif
+else # Linux distribution
+	CXXFLAGS	+= -fopenmp
+	LDFLAGS		+= -fopenmp
 endif
 
 # Arguments
-MACRO		+= -DOMP_ENABLE=$(OMP_ENABLE)
+MACRO		+= 
 INCLUDES	+= -I$(ROOT)/includes
-CXXFLAGS	+= --std=c++23 -O0
+CXXFLAGS	+= --std=c++23 -O3
 WARNING		+= -Wall -Wextra
 LDFLAGS		+= -lbenchmark
 

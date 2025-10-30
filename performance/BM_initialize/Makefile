@@ -1,6 +1,14 @@
 include ./.env
 DIR = $(CURDIR)
-OMP_NUM_THREADS = 4
-OMP_ENABLE = 0
+
+# SIMD instruction
+CXXFLAGS += -mavx512f -march=native -O3
+
+# Debug mode
+# CXXFLAGS += -g 
+# MACRO += -DDEBUG_MODE
+
+# OpenMP
+MACRO += -DOMP_ENABLE
 
 include ../Makefile

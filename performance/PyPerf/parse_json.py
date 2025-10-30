@@ -24,7 +24,7 @@ class BM_JsonParser:
     def print_context(self, attributes: list | tuple | set):
         print(green('=' * 20))
         for attr in attributes:
-            print(f'{attr}: {yellow(self.data_context[attr])}')
+            print(f'{attr}: {yellow(self.data_context.get(attr))}')
         print(green('=' * 20))
         
     def parse(self, keys: list | tuple | set):

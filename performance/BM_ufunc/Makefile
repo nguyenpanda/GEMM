@@ -1,10 +1,17 @@
 include ./.env
 DIR = $(CURDIR)
-OMP_NUM_THREADS = 4
-OMP_ENABLE = 1
-# CXXFLAGS += -g -fsanitize=address -fno-omit-frame-pointer
-# CXXFLAGS += -mavx
-# CXXFLAGS +=  -mfma -march=native -ftree-vectorize -fopenmp -ftree-vectorizer-verbose=2
-CXXFLAGS += -S -mavx
+
+CXXFLAGS += -DOMP_ENABLE
+
+
+# Disable Auto-Vectorize
+# CXXFLAGS += -fno-vectorize -fno-slp-vectorize
+
+# Allow SIMD instruction
+CXXFLAGS += -mavx512f -march=native
+
+# SIMD Report
+# CXXFLAGS += -Rpass=vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize
+# CXXFLAGS += -fno-slp-vectorize -Rpass-missed=loop-vectorize
 
 include ../Makefile

@@ -22,7 +22,7 @@ void MAIN_INIT(int argc, char** argv) {
     printf(GREEN "==========================\n" RESET);
     OMP_CONSOLE_INFO();
     printf(GREEN "==========================\n" RESET);
-    benchmark::AddCustomContext("OpenMP status", OMP_ENABLE ? "Enable" : "Disable");
+    benchmark::AddCustomContext("OMP_ENABLE", OMP_ENABLE ? "Enable" : "Disable");
     benchmark::AddCustomContext("OMP_NUM_THREADS", OMP_ENABLE ? std::to_string(omp_get_max_threads()) : "-1");
 }
 

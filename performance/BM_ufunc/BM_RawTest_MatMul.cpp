@@ -10,13 +10,21 @@ using namespace elementwise_SplittableMatrix;
     ->UseRealTime()                 \
 	->Range(MIN_RANGE, MAX_RANGE)
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-parameter"
 void MAIN_INIT(int argc, char** argv) {
+#pragma clang diagnostic pop
     printf(GREEN "==========================\n" RESET);
     OMP_CONSOLE_INFO();
     printf(GREEN "==========================\n" RESET);
-    printf(GREEN "_OPENMP=%d\n" RESET, _OPENMP);
-    benchmark::AddCustomContext("OpenMP status", OMP_ENABLE ? "Enable" : "Disable");
+    INIT_METADATA<float>();
+    benchmark::AddCustomContext("OMP_ENABLE", OMP_ENABLE ? "Enable" : "Disable");
     benchmark::AddCustomContext("OMP_NUM_THREADS", OMP_ENABLE ? std::to_string(omp_get_max_threads()) : "-1");
+    benchmark::AddCustomContext("ADD_RECURSIVE_THRESHOLD", std::to_string(ADD_RECURSIVE_THRESHOLD));
+    benchmark::AddCustomContext("MUL_RECURSIVE_THRESHOLD", std::to_string(MUL_RECURSIVE_THRESHOLD));
+    benchmark::AddCustomContext("PRECISION_STATUS", PRECISION_STATUS);
+    benchmark::AddCustomContext("PRECISION_MODE", std::to_string(PRECISION_MODE));
+    benchmark::AddCustomContext("MATMUL_ORDER", MATMUL_ORDER == MATMUL_IJK ? "IJK" : "IKJ");
 }
 
 BENCHMARK_DEFINE_F(BinaryFixture, BM_MatMul_Seq_ijk)(benchmark::State& state) {
