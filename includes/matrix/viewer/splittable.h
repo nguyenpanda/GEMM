@@ -14,7 +14,9 @@ public:
 	SplittableMatrix();
 	SplittableMatrix(Buffer<T>* _root, size_t ndim);
 	SplittableMatrix(Buffer<T>* _root, size_t _rdim, size_t _cdim);
-	SplittableMatrix<T>* split(size_t i, size_t j);
+	SplittableMatrix(const SplittableMatrix<T>& other);
+	SplittableMatrix<T>& operator=(const SplittableMatrix<T>& other);
+	SplittableMatrix<T>* split(size_t i, size_t j) const;
 	~SplittableMatrix() = default;
 	inline size_t map2Dto1DIndex(size_t i, size_t j) const;
 	inline T get(size_t index) const; // USE TRUE INDEX
@@ -22,7 +24,7 @@ public:
 	inline void print() const;
 	static bool is_same(SplittableMatrix<T>& lhs, SplittableMatrix<T>& rhs);
 
-private:
+protected:
 	SplittableMatrix(Buffer<T>* _root, 
 		size_t _rDis, size_t _cDis, 
 		size_t _rdim, size_t _cdim);
@@ -45,13 +47,29 @@ SplittableMatrix<T>::SplittableMatrix(Buffer<T>* _root, size_t _rdim, size_t _cd
 	: rDis(0), cDis(0), rdim(_rdim), cdim(_cdim), root(_root) {}
 
 template<class T>
+SplittableMatrix<T>::SplittableMatrix(const SplittableMatrix<T>& other)
+	: rDis(other.rDis), cDis(other.cDis), rdim(other.rdim), cdim(other.cdim), root(other.root) {}
+
+template<class T>
 SplittableMatrix<T>::SplittableMatrix(Buffer<T>* _root, 
 	size_t _rDis, size_t _cDis, 
 	size_t _rdim, size_t _cdim) 
 	: rDis(_rDis), cDis(_cDis), rdim(_rdim), cdim(_cdim), root(_root) {}
 
 template<class T>
-SplittableMatrix<T>* SplittableMatrix<T>::split(size_t i, size_t j) {
+SplittableMatrix<T>& SplittableMatrix<T>::operator=(const SplittableMatrix<T>& other) {
+	if (this != &other) {
+		rDis = other.rDis;
+		cDis = other.cDis;
+		rdim = other.rdim;
+		cdim = other.cdim;
+		root = other.root;
+	}
+	return *this;
+}
+
+template<class T>
+SplittableMatrix<T>* SplittableMatrix<T>::split(size_t i, size_t j) const {
 	size_t new_rdim = static_cast<size_t>(rdim / 2);
 	size_t new_cdim = static_cast<size_t>(cdim / 2);
 	return new SplittableMatrix<T>(
@@ -82,7 +100,7 @@ template<class T>
 inline void SplittableMatrix<T>::print() const {
 	for (size_t i = 0; i < rdim; i++) {
 		for (size_t j = 0; j < cdim; j++) {
-			printf("%5.2f ", get(i, j));
+			printf("%5.2f ", get(map2Dto1DIndex(i, j)));
 		}
 		printf("\n");
 	}

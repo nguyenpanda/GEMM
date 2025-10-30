@@ -8,20 +8,13 @@
 #include <cstddef>
 #include <random>
 
-#ifdef _OPENMP
-	#include <omp.h>
-#endif // _OPENMP
-
 template<class T>
 class InitializeRandom {
 public:
-    size_t min, max;
-    unsigned seed;
-    std::mt19937 generator;
+    T min, max;
 
 public:
-    InitializeRandom(size_t _min, size_t _max);
-    InitializeRandom(size_t _min, size_t _max, unsigned _seed);
+    InitializeRandom(T _min, T _max);
     ~InitializeRandom() = default;
     void fill(T* data, size_t length) const;
     void fill(Buffer<T>& buffer) const;
@@ -33,31 +26,27 @@ public:
 ////////////////////////////////////////////////////////
 
 template<class T>
-InitializeRandom<T>::InitializeRandom(size_t _min, size_t _max) {
-    seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+InitializeRandom<T>::InitializeRandom(T _min, T _max) {
     min = _min;
     max = _max;
-    generator = std::mt19937(seed);
-}
-
-template<class T>
-InitializeRandom<T>::InitializeRandom(size_t _min, size_t _max, unsigned _seed) {
-    seed = _seed;
-    min = _min;
-    max = _max;
-    generator = std::mt19937(seed);
 }
 
 template<class T>
 void InitializeRandom<T>::fill(T* data, size_t length) const {
-    #pragma omp parallel firstprivate(length) num_threads(omp_get_num_procs())
+    #pragma omp parallel
     {
-        std::uniform_real_distribution<float> distribution(min, max);
-        std::mt19937 local_generator = generator;
+        thread_local std::mt19937 generator(
+            static_cast<unsigned long>(
+                std::chrono::high_resolution_clock::now().time_since_epoch().count() +
+                omp_get_thread_num()
+            )
+        );
+
+        std::uniform_real_distribution<double> distribution(min, max);
 
         #pragma omp for
-        for (size_t i = 0; i < length; i++) {
-            data[i] = distribution(local_generator);
+        for (size_t i = 0; i < length; ++i) {
+            data[i] = static_cast<T>(distribution(generator));
         }
     }
 }

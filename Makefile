@@ -26,7 +26,7 @@ else # Linux distribution
 endif
 
 # Arguments
-MACRO		+= -DOMP_ENABLE=$(OMP_ENABLE)
+MACRO		+= 
 INCLUDES	+= -I$(ROOT)/includes
 CXXFLAGS	+= --std=c++23
 WARNING		+= -Wall -Wextra
@@ -85,7 +85,7 @@ execute: compile ### Execute
 	@echo $(GREEN_LINE)
 	@echo "Executing $(GREEN)$(EXE_FILES)$(RESET)"
 	@echo $(GREEN_LINE)
-	@$(EXE_FILES)
+	$(EXE_FILES) $(ARG)
 
 .PHONY: _directories
 _directories: ### Directories

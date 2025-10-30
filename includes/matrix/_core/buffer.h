@@ -61,7 +61,7 @@ inline size_t Buffer<T>::size() const {
 
 template<class T>
 void Buffer<T>::print() const {
-	float* buffer = static_cast<float*>(data);
+	T* buffer = static_cast<T*>(data);
 	for (size_t i = 0; i < rdim; i++) {
 		for (size_t j = 0; j < cdim; j++) {
 			printf("%5.2f ", buffer[i * cdim + j]);

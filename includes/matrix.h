@@ -4,5 +4,6 @@
 #include "matrix/initializer.h"
 #include "matrix/viewer.h"
 #include "matrix/ufunc.h"
+#include "matrix/io.h"
 
 #endif // MATRIX_MATRIX_H
