@@ -19,6 +19,7 @@ def plot_execute_time():
 			ax.plot(d['N'], d[feature], label=BM_name)
 			ax.set_title(feature)
 			ax.set_ylabel('time')
+			ax.grid(True, which="both", ls="--")
 			ax.legend(fontsize=8)
 	plt.savefig(BM_Parser.img_dir / f'{BM_Parser.json_file.stem}-execution_time.png')
  
@@ -35,6 +36,7 @@ def plot_ratio():
 			ax.set_xscale('log', base=2)
 			ax.set_title(feature)
 			ax.set_ylabel('ratio')
+			ax.grid(True, which="both", ls="--")
 			ax.legend(fontsize=8)
 	plt.savefig(BM_Parser.img_dir / f'{BM_Parser.json_file.stem}-speedup_ratio.png')
 

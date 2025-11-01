@@ -14,11 +14,6 @@ template<class T>
 int INIT_METADATA() {
 	printf("OMP_NUM_THREADS = %d\n", omp_get_max_threads());
 
-	MATRIX_RDIM = static_cast<size_t>(atoi(getenv("MATRIX_RDIM")));
-	MATRIX_CDIM = static_cast<size_t>(atoi(getenv("MATRIX_CDIM")));
-	printf("MATRIX_RDIM = %zu\n", MATRIX_RDIM);
-	printf("MATRIX_CDIM = %zu\n", MATRIX_CDIM);
-
 	ADD_RECURSIVE_THRESHOLD = static_cast<size_t>(atoi(getenv("ADD_RECURSIVE_THRESHOLD")));
 	ufunc::addition::OmpForkJoin<T>::set_threshold(ADD_RECURSIVE_THRESHOLD);
 	printf("ADD_RECURSIVE_THRESHOLD = %zu\n", ADD_RECURSIVE_THRESHOLD);

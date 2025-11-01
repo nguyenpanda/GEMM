@@ -3,12 +3,11 @@ DIR = $(CURDIR)
 
 MACRO += -DOMP_ENABLE
 
-
 # Disable Auto-Vectorize
 # CXXFLAGS += -fno-vectorize -fno-slp-vectorize
 
 # Order
-MACRO += -DMATMUL_ORDER=2
+# MACRO += -DMATMUL_ORDER=2
 # MACRO += -DPRECISION_MODE
 
 # Allow SIMD instruction

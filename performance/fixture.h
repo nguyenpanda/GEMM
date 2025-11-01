@@ -87,7 +87,7 @@ public:
         buffer = new Buffer<float>(state.range(0));
         matrix = new SplittableMatrix<float>(buffer, state.range(0));
         
-        initialize_random = new InitializeRandom<float>(-10, 10);
+        initialize_random = new InitializeRandom<float>(-1, 1);
         initialize_random->fill(*buffer);
     }
 
@@ -109,7 +109,7 @@ public:
         rhs_buffer = new Buffer<float>(state.range(0));
         out_buffer = new Buffer<float>(state.range(0));
 
-        initialize_random = new InitializeRandom<float>(-10, 10);
+        initialize_random = new InitializeRandom<float>(-1, 1);
         initialize_random->fill(*lhs_buffer);
         initialize_random->fill(*rhs_buffer);
 

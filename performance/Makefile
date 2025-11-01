@@ -11,25 +11,18 @@ OS				:= $(shell uname -s)
 
 # OpenMP
 ifeq ($(OS), Darwin) # MacOS
-	OMP_CONFIG		:= $(ROOT)/lib/omp-config.exe
-	ifneq ("$(wildcard $(OMP_CONFIG))", "") # If exists
-		INCLUDES	+= $(shell $(OMP_CONFIG) --includes)
-		CXXFLAGS	+= $(shell $(OMP_CONFIG) --cflags)
-		LDFLAGS		+= $(shell $(OMP_CONFIG) --ldflags)
-	else
-		INCLUDES	+= -I/usr/local/opt/libomp/include
-		CXXFLAGS	+= -Xpreprocessor -fopenmp
-		LDFLAGS		+= -lomp -L/usr/local/opt/libomp/lib
-	endif
+	INCLUDES	+= -I/usr/local/opt/libomp/include
+	CXXFLAGS	+= -Xpreprocessor -fopenmp
+	LDFLAGS		+= -lomp -L/usr/local/opt/libomp/lib
 else # Linux distribution
 	CXXFLAGS	+= -fopenmp
 	LDFLAGS		+= -fopenmp
 endif
 
 # Arguments
-MACRO		+= 
+MACRO		+= $(EXTRA_MACRO)
+CXXFLAGS	+= $(EXTRA_CXXFLAGS) --std=c++23
 INCLUDES	+= -I$(ROOT)/includes
-CXXFLAGS	+= --std=c++23 -O3
 WARNING		+= -Wall -Wextra
 LDFLAGS		+= -lbenchmark
 
@@ -56,7 +49,8 @@ define EXECUTE_MACRO
 @echo $(GREEN_LINE)
 @echo "Executing $(GREEN)$(1)$(RESET)"
 @echo $(GREEN_LINE)
-$(abspath $(1)) --benchmark_out="$(LOGGING)/$(basename $(notdir $(1)))-$(shell date +"%y-%m-%d_%H-%M-%S").$(BENCHMARK_OUT_FORMAT)"
+$(eval BENCHMARK_OUT_FILE := $(LOGGING)/$(basename $(notdir $(1)))-$(shell date +"%y-%m-%d_%H-%M-%S").$(BENCHMARK_OUT_FORMAT))
+$(abspath $(1)) --benchmark_out="$(BENCHMARK_OUT_FILE)"
 endef
 
 .PHONY: help

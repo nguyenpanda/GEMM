@@ -8,14 +8,14 @@ ARG += --operator @
 CXXFLAGS += -mavx512f -march=native -O3
 
 # Debug mode
-CXXFLAGS += -g 
-MACRO += -DDEBUG_MODE
+# CXXFLAGS += -g 
+# MACRO += -DDEBUG_MODE
 
 # OpenMP
 MACRO += -DOMP_ENABLE
 
 # Order
-MACRO += -DMATMUL_ORDER
-MACRO += -DPRECISION_MODE
+MACRO += -DMATMUL_ORDER=2
+# MACRO += -DPRECISION_MODE
 
 include ../Makefile
