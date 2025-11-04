@@ -26,9 +26,9 @@ else # Linux distribution
 endif
 
 # Arguments
-MACRO		+= 
+MACRO		+= $(EXTRA_MACRO)
 INCLUDES	+= -I$(ROOT)/includes
-CXXFLAGS	+= --std=c++23
+CXXFLAGS	+= --std=c++23 $(EXTRA_CXXFLAGS)
 WARNING		+= -Wall -Wextra
 LDFLAGS		+= 
 

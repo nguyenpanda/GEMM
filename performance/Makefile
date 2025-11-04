@@ -21,7 +21,7 @@ endif
 
 # Arguments
 MACRO		+= $(EXTRA_MACRO)
-CXXFLAGS	+= $(EXTRA_CXXFLAGS) --std=c++23
+CXXFLAGS	+= $(EXTRA_CXXFLAGS) --std=c++23 -O3
 INCLUDES	+= -I$(ROOT)/includes
 WARNING		+= -Wall -Wextra
 LDFLAGS		+= -lbenchmark

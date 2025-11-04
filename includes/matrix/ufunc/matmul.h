@@ -24,7 +24,7 @@ public:
 					out.data[i * out.cdim + j] = sum;
 				}
 			}
-		#elif PRECISION_MODE == PRECISION_KUNAN
+		#elif PRECISION_MODE == PRECISION_KANAN
 			for (size_t i = 0; i < out.rdim; i++) {
 				for (size_t j = 0; j < out.cdim; j++) {
 					T sum = 0, c = 0;
@@ -75,7 +75,7 @@ public:
 					out.set(out_idx, sum);
 				}
 			}
-		#elif PRECISION_MODE == PRECISION_KUNAN
+		#elif PRECISION_MODE == PRECISION_KANAN
 			for (size_t i = 0; i < out.rdim; i++) {
 				for (size_t j = 0; j < out.cdim; j++) {
 					const size_t out_idx = out.map2Dto1DIndex(i, j);

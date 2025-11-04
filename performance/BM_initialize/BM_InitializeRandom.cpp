@@ -38,7 +38,7 @@ BENCHMARK_REGISTER_F(UnaryBufferFixture, BM_InitializeRandom_Seq)
 	->BENCHMARK_APPLY();
 
 BENCHMARK_DEFINE_F(UnaryBufferFixture, BM_InitializeRandom_Omp_Vanilla)(benchmark::State& state) {
-    InitializeRandom<float> initialize_random(-10, 10);
+    InitializeRandom<float> initialize_random(-1.0f, 1.0f);
 
     for (auto _ : state) {
         initialize_random.fill(*buffer);

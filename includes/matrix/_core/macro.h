@@ -41,7 +41,7 @@
 #endif // MATMUL_ORDER == 0 || !defined(MATMUL_ORDER)
 
 // PRECISION MODE
-#define PRECISION_KUNAN 1 // William Kahan Summation Algorithm
+#define PRECISION_KANAN 1 // William Kahan Summation Algorithm
 #define PRECISION_NEUMAIER 2 // Improved Kahan–Babuška Algorithm
 
 #if PRECISION_MODE == 0 || !defined(PRECISION_MODE)

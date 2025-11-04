@@ -1,13 +1,9 @@
-from PyPerf import BM_JsonParser
+from PyPerf import BM_JsonParser, BM_CliParser
 
 import matplotlib.pyplot as plt
 import numpy as np
 
-import argparse
-
-parser = argparse.ArgumentParser(description="A sample script demonstrating argparse.")
-parser.add_argument("file", type=str, help="JSON file")
-args = parser.parse_args()
+args = BM_CliParser().args
 
 def plot_execute_time():
 	fig, axes = plt.subplots(len(Y_FEATURES), 1, figsize=(8, 8))
@@ -66,7 +62,8 @@ if __name__ == '__main__':
     Y_FEATURES = ['real_time', 'cpu_time']
     
     plot_execute_time()
-    
     plot_ratio()
     
-    plt.show()
+    if args.show_img:
+        plt.show()
+    

@@ -1,75 +1,87 @@
 from PyPerf import BM_JsonParser
+from PyPerf import BM_CliParser as BM_CliBase
 
-import seaborn as sns
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from matplotlib.patches import Rectangle, Patch
 from matplotlib.widgets import Slider
 from matplotlib.colors import PowerNorm
+from matplotlib.lines import Line2D
 
-import re
-import argparse
+class BM_CliParser(BM_CliBase):
+    
+    @classmethod
+    def setup(cls, parser):
+        parser = super().setup(parser)
+        parser.add_argument("--no_patch", action='store_true', help="Display maximum value per row")
+        parser.add_argument("--no_seq", action='store_true', help="Remove sequence value (Threshold > N)")
+        return parser
 
-parser = argparse.ArgumentParser(description="A sample script demonstrating argparse.")
-parser.add_argument("file", type=str, help="JSON file")
-args = parser.parse_args()
+
+args = BM_CliParser().args
 
 def plot_heat_map():
-    col_max = np.max(real_time, axis=0)
-    ratio = col_max / real_time
-
+    col_max = real_time_df.max(axis=0)
+    ratio = col_max / real_time_df
+    
+    mask = ratio.index.to_numpy()[:, None] >= ratio.columns.to_numpy()[None, :]
+    if args.no_seq:
+        ratio[mask] = 0
+    
     fig, ax = plt.subplots(figsize=(12, 7))
     sns.heatmap(
-        pd.DataFrame(ratio, columns=N, index=T),
+        ratio, ax=ax,
         annot=True, fmt='.2f', cmap='coolwarm',
-        ax=ax,
         norm=PowerNorm(gamma=0.4),
     )
-    ax.set_title('Relative Speedup per Matrix Size for Fork-Join Element-wise Addition')
-    ax.set_xlabel('N')
-    ax.set_ylabel('Threshold')
-    fig.savefig(BM_Parser.img_dir / f'{BM_Parser.json_file.stem}-speedup_ratio.png')
     
-    plt.show()
+    # Sequence
+    row_idx, col_idx = np.where(mask)
+    row_val = np.unique(row_idx)
+    col_val = np.unique(col_idx)
+    for i, j in zip(row_val, col_val):
+        ax.plot((j, i), (j+1, i), 'black', linewidth=1)
+        ax.plot((j+1, i), (j+1, i+1), 'black', linewidth=1)
     
-def plot_3d():
-    col_max = np.max(real_time, axis=0)
-    ratio = col_max / real_time
-    X, Y = np.meshgrid(N, T) # type: ignore
-    
-    fig = plt.figure(figsize=(10, 7))
-    ax = fig.add_subplot(111, projection='3d')
+    if not args.no_patch:
+        def _max_value(df, color, lw):
+            for col_idx, row_idx in enumerate(
+                df.index.get_loc(r) 
+                for r in df.idxmax(axis=0)
+            ):
+                rect = Rectangle(
+                    (col_idx, row_idx), 1, 1, # type: ignore
+                    fill=False,
+                    edgecolor=color,
+                    lw=lw,
+                )
+                ax.add_patch(rect)
+        # Maximum Value Global
+        temp = ratio.copy()
+        _max_value(ratio, 'yellow', 4)
+        
+        # Maximun Value Sequence
+        temp[mask] = 0
+        _max_value(temp, 'green', 2)
+        
+    ax.set_title('Relative Speedup per Matrix Size (N) for Fork-Join Element-wise Addition')
+    if args.legend:
+        box = ax.get_position()
+        ax.set_position((box.x0, box.y0 + box.height * 0.1, box.width, box.height * 0.9))
+        ax.legend(handles=[
+            Line2D([0], [0], color='black', lw=4, label='N <= Threshold'),
+            Patch(linewidth=2, edgecolor='yellow', facecolor='white', label='Relative maximum per N'),
+            Patch(linewidth=2, edgecolor='green', facecolor='white', label='Relative maximun per N only for N >= Threshold'),
+            ], 
+            loc='upper center', bbox_to_anchor=(0.5, -0.15),
+            ncol=3, fancybox=True, shadow=True
+        )
+    fig.savefig(BM_Parser.img_dir / f'{BM_Parser.json_file.stem}-heatmap.png')
 
-    surf = ax.plot_surface(
-        X, Y, ratio,
-        cmap='coolwarm',
-        linewidth=0,
-        antialiased=True,
-        norm=PowerNorm(gamma=0.5),
-    )
-
-    ax.set_xlabel('Matrix Size (N)')
-    ax.set_ylabel('Threshold')
-    ax.set_zlabel('Relative Speedup')
-    ax.set_title('Relative Speedup Surface — Fork-Join Element-wise Addition')
-
-    fig.colorbar(surf, shrink=0.5, aspect=10)
-
-    fig.savefig(BM_Parser.img_dir / f'{BM_Parser.json_file.stem}-speedup_ratio_3D.png')
-
-    ax_elev = plt.axes((0.25, 0.02, 0.50, 0.02))
-    ax_azim = plt.axes((0.25, 0.05, 0.50, 0.02))
-    
-    slider_elev = Slider(ax_elev, 'Elev', 0, 90, valinit=90)
-    slider_azim = Slider(ax_azim, 'Azim', 0, 360, valinit=90)
-
-    def update(val):
-        ax.view_init(elev=slider_elev.val, azim=slider_azim.val)
-        fig.canvas.draw_idle()
-
-    slider_elev.on_changed(update)
-    slider_azim.on_changed(update)
-    plt.show()
 
 if __name__ == '__main__':
     BM_Parser = BM_JsonParser(args.file)
@@ -95,6 +107,7 @@ if __name__ == '__main__':
     
     d = BM_Parser.benchmarks
     
+    import re
     T, N, real_time = list(), None, list()
     for plot, val in d.items():
         if N is None:
@@ -107,14 +120,27 @@ if __name__ == '__main__':
         real_time.append(d[plot]['real_time'])
     
     T = np.array(T)
-    N = np.array(N)
-    real_time = np.array(real_time)
+    idxT = T.argsort()
+    T = T[idxT]
     
-    print(real_time.transpose())
-    print('real_time.shape:', real_time.shape)
-    print('              N:', N)
-    print('      threshold:', T)
+    N = np.array(N)
+    idxN = N.argsort()
+    N = N[idxN]
+    
+    real_time_df = pd.DataFrame(
+        np.array(real_time)[idxT][:, idxN], 
+        columns=N, index=T,
+    ) \
+        .rename_axis('Threshold', axis='index') \
+        .rename_axis('N', axis='columns')
+        
+    pd.set_option('display.precision', 2)
+    if args.display_console:
+        print(real_time_df)
     
     plot_heat_map()
-    plot_3d()
     
+    if args.show_img:
+        plt.show()
+    plt.close()
+        

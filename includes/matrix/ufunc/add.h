@@ -10,6 +10,7 @@ template<class T>
 class Seq {
 public:
 	static inline void operate(Buffer<T>& out, const Buffer<T>& lhs, const Buffer<T>& rhs) {
+		#pragma omp simd
 		for (size_t i = 0; i < out.size(); i++) {
 			out.data[i] = lhs.data[i] + rhs.data[i];
 		}
@@ -17,6 +18,7 @@ public:
 
 	static inline void operate(SplittableMatrix<T>& out, const SplittableMatrix<T>& lhs, const SplittableMatrix<T>& rhs)  {
 		for (size_t i = 0; i < out.rdim; i++) {
+			#pragma omp simd
 			for (size_t j = 0; j < out.cdim; j++) {
 				size_t out_idx = out.map2Dto1DIndex(i, j);
 				size_t lhs_idx = lhs.map2Dto1DIndex(i, j);
@@ -33,19 +35,25 @@ class OmpVanilla {
 public:
 	static inline void operate(Buffer<T>& out, const Buffer<T>& lhs, const Buffer<T>& rhs) {
 		#pragma omp parallel
-		for (size_t i = 0; i < out.size(); i++) {
-			out.data[i] = lhs.data[i] + rhs.data[i];
+		{
+			#pragma omp for simd
+			for (size_t i = 0; i < out.size(); i++) {
+				out.data[i] = lhs.data[i] + rhs.data[i];
+			}
 		}
 	}
 
 	static inline void operate(SplittableMatrix<T>& out, const SplittableMatrix<T>& lhs, const SplittableMatrix<T>& rhs) {
 		#pragma omp parallel
-		for (size_t i = 0; i < out.rdim; i++) {
-			for (size_t j = 0; j < out.cdim; j++) {
-				size_t out_idx = out.map2Dto1DIndex(i, j);
-				size_t lhs_idx = lhs.map2Dto1DIndex(i, j);
-				size_t rhs_idx = rhs.map2Dto1DIndex(i, j);
-				out.root->data[out_idx] = lhs.root->data[lhs_idx] + rhs.root->data[rhs_idx];
+		{
+			#pragma omp for simd
+			for (size_t i = 0; i < out.rdim; i++) {
+				for (size_t j = 0; j < out.cdim; j++) {
+					size_t out_idx = out.map2Dto1DIndex(i, j);
+					size_t lhs_idx = lhs.map2Dto1DIndex(i, j);
+					size_t rhs_idx = rhs.map2Dto1DIndex(i, j);
+					out.root->data[out_idx] = lhs.root->data[lhs_idx] + rhs.root->data[rhs_idx];
+				}
 			}
 		}
 	}
@@ -65,6 +73,10 @@ public:
 
 	static void set_threshold(size_t _threshold) {
 		threshold = _threshold;
+	}
+
+	static size_t get_threshold() {
+		return threshold;
 	}
 
 protected:
@@ -93,6 +105,7 @@ protected:
 
 		OmpForkJoin<T>* tasks[4];
 
+		#pragma omp unroll full
 		for (int i = 0; i < 4; i++) {
 			// The following loop must iterate backward.
 			// This is because Nguyenpanda designed the ForkJoin model to execute tasks
@@ -104,6 +117,7 @@ protected:
 			);
 		}
 
+		#pragma omp unroll full
 		for (int i = 0; i < 4; ++i) {
 			CODE_FOR_DEBUG_MODE(std::string temp = format + std::to_string(3-i);)
 			#pragma omp task
@@ -114,6 +128,7 @@ protected:
 
 		#pragma omp taskwait
 
+		#pragma omp unroll full
 		for (int i = 0; i < 4; i++) {
 			delete tasks[i]->lhs;
 			delete tasks[i]->rhs;
@@ -126,6 +141,25 @@ protected:
 
 template<class T> 
 size_t OmpForkJoin<T>::threshold = -1;
+
+
+template<class T>
+class GODDAMNNN {
+public:
+	static inline void operate(SplittableMatrix<T>& out, const SplittableMatrix<T>& lhs, const SplittableMatrix<T>& rhs) {
+		size_t N = static_cast<size_t>(out.cdim);
+		if (N <= 128) {
+			Seq<T>::operate(out, lhs, rhs);
+			return;
+		}
+
+		size_t THRESHOLD = OmpForkJoin<T>::get_threshold();
+    	OmpForkJoin<T>::set_threshold(static_cast<size_t>(N / 2));
+		OmpForkJoin<T>::operate(out, lhs, rhs);
+		OmpForkJoin<T>::set_threshold(THRESHOLD);
+	}
+};
+
 
 }; // namespace addition
 }; // namespace ufunc

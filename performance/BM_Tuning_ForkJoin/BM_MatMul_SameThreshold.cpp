@@ -36,7 +36,8 @@ void MAIN_INIT(int argc, char** argv) {
     X(128)             \
     X(256)             \
     X(512)             \
-    X(1024)
+    X(1024)            \
+    X(2048)
 
 #define BENCHMARK_FORKJOIN_THRESHOLD(THRESHOLD)                             \
     BENCHMARK_DEFINE_F(BinaryFixture, BM_ForkJoin_MatMul_SameT_T##THRESHOLD)\

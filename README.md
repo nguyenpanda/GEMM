@@ -5,7 +5,7 @@ This repository by `nguyenpanda` contains `C/C++` code and examples for the `Par
 ## Build & Run
 
 ```bash
-cd <dir-num> # e.g., 01, 02, ...
+cd <dir> # e.g., performance, test, ...
 make execute
 ```
 
@@ -15,7 +15,7 @@ Tip: run `make help` to see all available targets defined in each `Makefile`.
 
 ```bash
 repo_root
-├── 01
+├── performance
 │   ├── .env
 │   ├── main.cpp
 │   └── Makefile
@@ -39,17 +39,16 @@ repo_root
 
 - The top-level `repo_root/Makefile` is the primary entry point.
 
-- To override `OpenMP` environment variables for a specific exercise, edit `.env` file.
+- To override `OpenMP` or `runtime` environment variables for a specific exercise, edit `.env` file.
 
-- To add or tweak compile flags (e.g., `CXXFLAGS`, `LDFLAGS`, `INCLUDES`), edit `Makefile` in `<dir-num>`.
+- To add or tweak compile flags (e.g., `CXXFLAGS`, `LDFLAGS`, `INCLUDES`), edit `Makefile` in `<dir>`. Or adding via command line while compile using `EXTRA_CXXFLAGS` or `EXTRA_MACRO` (e.g., `cd performance && make execute EXECUTE=build/BM_MatAdd.exe EXTRA_CXXFLAGS="-O3 -Ofast -Wall"`)
 
 ## Directories
 
-A quick map of what each directory (`<dir-num>`) demonstrates:
+A quick map of what each directory (`<dir>`) demonstrates:
 
 | **Name** | **Description** | **Note** |
 |:--------:|-----------------|----------|
-| 01 | Test common `OpenMP` pragmas/keywords | |
-| 02 | 1D vector addition | |
-| 03 | Computing `π` (pi) | |
-| chapter16 | `Chapter 16: Scheduling and work distribution` from `The Art of Multiprocessor Programming` edition `2` by `Herlihy et al` | |
+| include | Contains the core of this repo | The implementation is done in header file, because of `C++` template |
+| performance | All benchmarks are done in this repo | Using `Google Benchmark` and contains its own  |
+| test | Testing the correctness of algorithm | Using `Numpy` |

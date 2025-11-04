@@ -3,7 +3,7 @@
 using namespace elementwise_SplittableMatrix;
 
 #define MIN_RANGE 1 << 2
-#define MAX_RANGE 1 << 13
+#define MAX_RANGE 1 << 11
 #define BENCHMARK_APPLY()           \
     RangeMultiplier(2)              \
     ->MeasureProcessCPUTime()       \
@@ -28,8 +28,8 @@ void MAIN_INIT(int argc, char** argv) {
 
 #define THRESHOLD_LIST \
     X(2)               \
-    X(4)               \
     X(8)               \
+    X(4)               \
     X(16)              \
     X(32)              \
     X(64)              \
@@ -37,19 +37,21 @@ void MAIN_INIT(int argc, char** argv) {
     X(256)             \
     X(512)             \
     X(1024)            \
-    X(2048)            \
-    X(4096)            \
-    X(8192)
+    X(2048)
 
-#define BENCHMARK_FORKJOIN_THRESHOLD(THRESHOLD)                             \
-    BENCHMARK_DEFINE_F(BinaryFixture, BM_ForkJoin_Add_T##THRESHOLD)         \
-    (benchmark::State& state) {                                             \
-        ufunc::addition::OmpForkJoin<float>::set_threshold(THRESHOLD);      \
-        for (auto _ : state) {                                              \
-            ufunc::addition::OmpForkJoin<float>::operate(*out, *lhs, *rhs); \
-        }                                                                   \
-    }                                                                       \
-    BENCHMARK_REGISTER_F(BinaryFixture, BM_ForkJoin_Add_T##THRESHOLD)->BENCHMARK_APPLY();
+#define BENCHMARK_FORKJOIN_THRESHOLD(THRESHOLD)                                         \
+    BENCHMARK_DEFINE_F(BinaryFixture, BM_ForkJoin_MatMul_GoddamnnnAdd_T##THRESHOLD)     \
+    (benchmark::State& state) {                                                         \
+        size_t N = static_cast<size_t>(state.range(0));                                 \
+        size_t ADD_THRESHOLD = static_cast<size_t>(N / 2);                              \
+        if (N <= 128) {ADD_THRESHOLD = 256;}                                            \
+        ufunc::addition::OmpForkJoin<float>::set_threshold(ADD_THRESHOLD);              \
+        ufunc::matmul::OmpForkJoin<float>::set_threshold(THRESHOLD);                    \
+        for (auto _ : state) {                                                          \
+            ufunc::matmul::OmpForkJoin<float>::operate(*out, *lhs, *rhs);               \
+        }                                                                               \
+    }                                                                                   \
+    BENCHMARK_REGISTER_F(BinaryFixture, BM_ForkJoin_MatMul_GoddamnnnAdd_T##THRESHOLD)->BENCHMARK_APPLY();
 
 #define X(v) BENCHMARK_FORKJOIN_THRESHOLD(v);
     THRESHOLD_LIST
