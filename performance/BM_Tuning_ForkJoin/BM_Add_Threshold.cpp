@@ -3,7 +3,7 @@
 using namespace elementwise_SplittableMatrix;
 
 #define MIN_RANGE 1 << 2
-#define MAX_RANGE 1 << 13
+#define MAX_RANGE 1 << 17
 #define BENCHMARK_APPLY()           \
     RangeMultiplier(2)              \
     ->MeasureProcessCPUTime()       \
@@ -21,9 +21,6 @@ void MAIN_INIT(int argc, char** argv) {
 	printf("MATMUL_ORDER = %s\n", MATMUL_ORDER == MATMUL_IJK ? "IJK" : "IKJ");
     benchmark::AddCustomContext("OMP_ENABLE", OMP_ENABLE ? "Enable" : "Disable");
     benchmark::AddCustomContext("OMP_NUM_THREADS", OMP_ENABLE ? std::to_string(omp_get_max_threads()) : "-1");
-    benchmark::AddCustomContext("PRECISION_STATUS", PRECISION_STATUS);
-    benchmark::AddCustomContext("PRECISION_MODE", std::to_string(PRECISION_MODE));
-    benchmark::AddCustomContext("MATMUL_ORDER", MATMUL_ORDER == MATMUL_IJK ? "IJK" : "IKJ");
 }
 
 #define THRESHOLD_LIST \
@@ -39,7 +36,11 @@ void MAIN_INIT(int argc, char** argv) {
     X(1024)            \
     X(2048)            \
     X(4096)            \
-    X(8192)
+    X(8192)            \
+    X(16384)           \
+    X(32768)           \
+    X(65536)           \
+    X(131072)
 
 #define BENCHMARK_FORKJOIN_THRESHOLD(THRESHOLD)                             \
     BENCHMARK_DEFINE_F(BinaryFixture, BM_ForkJoin_Add_T##THRESHOLD)         \

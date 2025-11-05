@@ -22,13 +22,13 @@ ifeq ($(OS), Darwin) # MacOS
 	endif
 else # Linux distribution
 	CXXFLAGS	+= -fopenmp
-	LDFLAGS		+= -fopenmp
+	LDFLAGS		+= 
 endif
 
 # Arguments
 MACRO		+= $(EXTRA_MACRO)
 INCLUDES	+= -I$(ROOT)/includes
-CXXFLAGS	+= --std=c++23 $(EXTRA_CXXFLAGS)
+CXXFLAGS	+= -std=c++23 $(EXTRA_CXXFLAGS)
 WARNING		+= -Wall -Wextra
 LDFLAGS		+= 
 
@@ -53,23 +53,23 @@ $(info $(META_MESS))
 
 .PHONY: help
 help: ### Show this help message
-	@echo $(HELP_MSG)
+	@echo -e $(HELP_MSG)
 	@awk -F ':.*###' '$$0 ~ FS {printf "$(GREEN)%15s$(RESET)%s\n", $$1 ":", $$2}' \
 		$(MAKEFILE_LIST) | grep -v '@awk' | sort
 
 .PHONY: test
 test: ### Use for debugging
-	@echo $(GREEN_LINE)
-	@echo "      ROOT:" $(ROOT)
-	@echo "       DIR:" $(DIR)
-	@echo "     BUILD:" $(BUILD)
-	@echo " SRC_FILES:" $(SRC_FILES)
-	@echo " OBJ_FILES:" $(OBJ_FILES)
-	@echo "        OS:" $(OS)
-	@echo "  INCLUDES:" $(INCLUDES)
-	@echo "  CXXFLAGS:" $(CXXFLAGS)
-	@echo "   LDFLAGS:" $(LDFLAGS)
-	@echo "   DEPENDS:" $(DEPENDS)
+	@echo -e $(GREEN_LINE)
+	@echo -e "      ROOT:" $(ROOT)
+	@echo -e "       DIR:" $(DIR)
+	@echo -e "     BUILD:" $(BUILD)
+	@echo -e " SRC_FILES:" $(SRC_FILES)
+	@echo -e " OBJ_FILES:" $(OBJ_FILES)
+	@echo -e "        OS:" $(OS)
+	@echo -e "  INCLUDES:" $(INCLUDES)
+	@echo -e "  CXXFLAGS:" $(CXXFLAGS)
+	@echo -e "   LDFLAGS:" $(LDFLAGS)
+	@echo -e "   DEPENDS:" $(DEPENDS)
 
 $(EXE_FILES): $(OBJ_FILES)
 	$(CXX) $(WARNING) $(LDFLAGS) $^ -o $@
@@ -82,9 +82,9 @@ compile: _directories $(EXE_FILES) ### Compile
 	
 .PHONY: execute
 execute: compile ### Execute
-	@echo $(GREEN_LINE)
-	@echo "Executing $(GREEN)$(EXE_FILES)$(RESET)"
-	@echo $(GREEN_LINE)
+	@echo -e $(GREEN_LINE)
+	@echo -e "Executing $(GREEN)$(EXE_FILES)$(RESET)"
+	@echo -e $(GREEN_LINE)
 	$(EXE_FILES) $(ARG)
 
 .PHONY: _directories
@@ -93,12 +93,12 @@ _directories: ### Directories
 
 .PHONY: clear
 clear: ### Clear
-	@echo "$(RED)Are you sure you want to delete the directory $(YELLOW)'$(BUILD)'$(RED)? (y/N)$(RESET)"
+	@echo -e "$(RED)Are you sure you want to delete the directory $(YELLOW)'$(BUILD)'$(RED)? (y/N)$(RESET)"
 	@read -p "Type y to confirm: " confirm; \
 	if [ "$$confirm" = "y" ]; then \
-		echo "$(RED)Deleting $(YELLOW)$(BUILD)$(RESET)"; \
+		echo -e "$(RED)Deleting $(YELLOW)$(BUILD)$(RESET)"; \
 		rm -rf $(BUILD); \
 	else \
-		echo "$(GREEN)Deletion cancelled.$(RESET)"; \
+		echo -e "$(GREEN)Deletion cancelled.$(RESET)"; \
 	fi
 

@@ -7,7 +7,7 @@ typedef __m512 simd512;
 using namespace elementwise_Buffer;
 
 #define MIN_RANGE 1 << 2
-#define MAX_RANGE 1 << 16
+#define MAX_RANGE 1 << 17
 #define BENCHMARK_APPLY()           \
     RangeMultiplier(2)              \
     ->MeasureProcessCPUTime()       \
@@ -119,6 +119,7 @@ BENCHMARK_DEFINE_F(BinaryFixture, BM_Vec_Addition_AVX2)(benchmark::State& state)
 BENCHMARK_REGISTER_F(BinaryFixture, BM_Vec_Addition_AVX2)
 	->BENCHMARK_APPLY();
 
+#ifdef __AVX512F__
 BENCHMARK_DEFINE_F(BinaryFixture, BM_Vec_Addition_Omp_ParFor_AVX512)(benchmark::State& state) {
     for (auto _ : state) {
         const size_t N = out->size();
@@ -140,7 +141,9 @@ BENCHMARK_DEFINE_F(BinaryFixture, BM_Vec_Addition_Omp_ParFor_AVX512)(benchmark::
 
 BENCHMARK_REGISTER_F(BinaryFixture, BM_Vec_Addition_Omp_ParFor_AVX512)
 	->BENCHMARK_APPLY();
+#endif // __AVX512F__
 
+#ifdef __AVX512F__
 BENCHMARK_DEFINE_F(BinaryFixture, BM_Vec_Addition_AVX512)(benchmark::State& state) {
     for (auto _ : state) {
         const size_t N = out->size();
@@ -161,5 +164,6 @@ BENCHMARK_DEFINE_F(BinaryFixture, BM_Vec_Addition_AVX512)(benchmark::State& stat
 
 BENCHMARK_REGISTER_F(BinaryFixture, BM_Vec_Addition_AVX512)
 	->BENCHMARK_APPLY();
+#endif // __AVX512F__
 
 CUSTOM_BENCHMARK_MAIN();

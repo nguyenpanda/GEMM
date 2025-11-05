@@ -15,13 +15,13 @@ ifeq ($(OS), Darwin) # MacOS
 	CXXFLAGS	+= -Xpreprocessor -fopenmp
 	LDFLAGS		+= -lomp -L/usr/local/opt/libomp/lib
 else # Linux distribution
-	CXXFLAGS	+= -fopenmp
-	LDFLAGS		+= -fopenmp
+	CXXFLAGS	+= -fopenmp 
+	LDFLAGS		+= -lpthread
 endif
 
 # Arguments
 MACRO		+= $(EXTRA_MACRO)
-CXXFLAGS	+= $(EXTRA_CXXFLAGS) --std=c++23 -O3
+CXXFLAGS	+= $(EXTRA_CXXFLAGS) -std=c++23 -O3
 INCLUDES	+= -I$(ROOT)/includes
 WARNING		+= -Wall -Wextra
 LDFLAGS		+= -lbenchmark
@@ -46,35 +46,35 @@ $(info $(META_MESS))
 
 # GOOGLE BENCHMARK
 define EXECUTE_MACRO
-@echo $(GREEN_LINE)
-@echo "Executing $(GREEN)$(1)$(RESET)"
-@echo $(GREEN_LINE)
+@echo -e $(GREEN_LINE)
+@echo -e "Executing $(GREEN)$(1)$(RESET)"
+@echo -e $(GREEN_LINE)
 $(eval BENCHMARK_OUT_FILE := $(LOGGING)/$(basename $(notdir $(1)))-$(shell date +"%y-%m-%d_%H-%M-%S").$(BENCHMARK_OUT_FORMAT))
 $(abspath $(1)) --benchmark_out="$(BENCHMARK_OUT_FILE)"
 endef
 
 .PHONY: help
 help: ### Show this help message
-	@echo $(HELP_MSG)
+	@echo -e $(HELP_MSG)
 	@awk -F ':.*###' '$$0 ~ FS {printf "$(GREEN)%15s$(RESET)%s\n", $$1 ":", $$2}' \
 		$(MAKEFILE_LIST) | grep -v '@awk' | sort
 
 .PHONY: test
 test: ### Use for debugging
-	@echo $(GREEN_LINE)
-	@echo "      ROOT:" $(ROOT)
-	@echo "       DIR:" $(DIR)
-	@echo "     BUILD:" $(BUILD)
-	@echo " SRC_FILES:" $(SRC_FILES)
-	@echo " EXE_FILES:" $(EXE_FILES)
-	@echo "        OS:" $(OS)
-	@echo "  INCLUDES:" $(INCLUDES)
-	@echo "  CXXFLAGS:" $(CXXFLAGS)
-	@echo "   LDFLAGS:" $(LDFLAGS)
-	@echo "   DEPENDS:" $(DEPENDS)
+	@echo -e $(GREEN_LINE)
+	@echo -e "      ROOT:" $(ROOT)
+	@echo -e "       DIR:" $(DIR)
+	@echo -e "     BUILD:" $(BUILD)
+	@echo -e " SRC_FILES:" $(SRC_FILES)
+	@echo -e " EXE_FILES:" $(EXE_FILES)
+	@echo -e "        OS:" $(OS)
+	@echo -e "  INCLUDES:" $(INCLUDES)
+	@echo -e "  CXXFLAGS:" $(CXXFLAGS)
+	@echo -e "   LDFLAGS:" $(LDFLAGS)
+	@echo -e "   DEPENDS:" $(DEPENDS)
 
 $(BUILD)/%.exe: $(DIR)/%.cpp $(ROOT)/performance/Makefile $(DIR)/Makefile
-	$(CXX) $(WARNING) $(MACRO) $(CXXFLAGS) $(INCLUDES) $(LDFLAGS) -MMD -MP $< -o $@
+	$(CXX) $(WARNING) $(MACRO) $(CXXFLAGS) $(INCLUDES) -MMD -MP $< -o $@ $(LDFLAGS)
 
 .PHONY: compile
 compile: _directories $(EXE_FILES) ### Compile
@@ -93,12 +93,12 @@ _directories: ### Directories
 
 .PHONY: clear
 clear: ### Clear
-	@echo "$(RED)Are you sure you want to delete the directory $(YELLOW)'$(BUILD)'$(RED)? (y/N)$(RESET)"
+	@echo -e "$(RED)Are you sure you want to delete the directory $(YELLOW)'$(BUILD)'$(RED)? (y/N)$(RESET)"
 	@read -p "Type y to confirm: " confirm; \
 	if [ "$$confirm" = "y" ]; then \
-		echo "$(RED)Deleting $(YELLOW)$(BUILD)$(RESET)"; \
+		echo -e "$(RED)Deleting $(YELLOW)$(BUILD)$(RESET)"; \
 		rm -rf $(BUILD); \
 	else \
-		echo "$(GREEN)Deletion cancelled.$(RESET)"; \
+		echo -e "$(GREEN)Deletion cancelled.$(RESET)"; \
 	fi
 

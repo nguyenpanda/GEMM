@@ -14,7 +14,7 @@ MACRO += -DOMP_ENABLE
 CXXFLAGS += -mavx512f -march=native
 
 # SIMD Report
-# CXXFLAGS += -Rpass=vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize
+CXXFLAGS += -Rpass=vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize
 # CXXFLAGS += -fno-slp-vectorize -Rpass-missed=loop-vectorize
 
 include ../Makefile

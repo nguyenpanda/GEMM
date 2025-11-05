@@ -10,7 +10,7 @@ inline float FloatRandom() {
 }
 
 #define MIN_RANGE 1 << 1
-#define MAX_RANGE 1 << 15
+#define MAX_RANGE 1 << 17
 #define BENCHMARK_APPLY()           \
     RangeMultiplier(2)              \
     ->MeasureProcessCPUTime()       \

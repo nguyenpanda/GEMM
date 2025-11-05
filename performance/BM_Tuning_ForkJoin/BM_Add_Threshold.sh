@@ -1,15 +1,8 @@
- rm -rf build
-make compile
-make execute EXECUTE=build/BM_Add_Threshold.exe OMP_NUM_THREADS=4
-make execute EXECUTE=build/BM_Add_Threshold.exe OMP_NUM_THREADS=5
-make execute EXECUTE=build/BM_Add_Threshold.exe OMP_NUM_THREADS=6
-make execute EXECUTE=build/BM_Add_Threshold.exe OMP_NUM_THREADS=7
-make execute EXECUTE=build/BM_Add_Threshold.exe OMP_NUM_THREADS=8
+mkdir -p compile_flags
 
 rm -rf build
-make compile EXTRA_MACRO="-DPRECISION_MODE=1"
+make compile >> compile_flags/BM_Add_Threshold.txt
+make execute EXECUTE=build/BM_Add_Threshold.exe OMP_NUM_THREADS=2
 make execute EXECUTE=build/BM_Add_Threshold.exe OMP_NUM_THREADS=4
-make execute EXECUTE=build/BM_Add_Threshold.exe OMP_NUM_THREADS=5
 make execute EXECUTE=build/BM_Add_Threshold.exe OMP_NUM_THREADS=6
-make execute EXECUTE=build/BM_Add_Threshold.exe OMP_NUM_THREADS=7
 make execute EXECUTE=build/BM_Add_Threshold.exe OMP_NUM_THREADS=8

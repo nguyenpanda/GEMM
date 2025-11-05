@@ -3,7 +3,7 @@
 using namespace elementwise_SplittableMatrix;
 
 #define MIN_RANGE 1 << 2
-#define MAX_RANGE 1 << 13
+#define MAX_RANGE 1 << 11
 #define BENCHMARK_APPLY()           \
     RangeMultiplier(2)              \
     ->MeasureProcessCPUTime()       \

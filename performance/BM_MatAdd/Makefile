@@ -6,9 +6,6 @@ MACRO += -DOMP_ENABLE
 # Disable Auto-Vectorize
 # CXXFLAGS += -fno-vectorize -fno-slp-vectorize
 
-# Order
-# MACRO += -DPRECISION_MODE
-
 # Allow SIMD instruction
 CXXFLAGS += -mavx512f -march=native
 

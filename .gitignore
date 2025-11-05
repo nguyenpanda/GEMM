@@ -17,5 +17,6 @@ __pycache__
 *.d
 *.s
 benchmark
+compile_flags
 
 build
