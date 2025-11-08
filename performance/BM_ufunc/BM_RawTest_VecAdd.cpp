@@ -7,7 +7,7 @@ typedef __m512 simd512;
 using namespace elementwise_Buffer;
 
 #define MIN_RANGE 1 << 2
-#define MAX_RANGE 1 << 17
+#define MAX_RANGE 1 << 16
 #define BENCHMARK_APPLY()           \
     RangeMultiplier(2)              \
     ->MeasureProcessCPUTime()       \

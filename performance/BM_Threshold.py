@@ -19,6 +19,7 @@ class BM_CliParser(BM_CliBase):
         parser = super().setup(parser)
         parser.add_argument("--no_patch", action='store_true', help="Display maximum value per row")
         parser.add_argument("--no_seq", action='store_true', help="Remove sequence value (Threshold > N)")
+        parser.add_argument("--unique_seq", action='store_true', help="Only 1 sequence value on heatmap")
         return parser
 
 
@@ -30,7 +31,11 @@ def plot_heat_map():
     
     mask = ratio.index.to_numpy()[:, None] >= ratio.columns.to_numpy()[None, :]
     if args.no_seq:
-        ratio[mask] = 0
+        ratio[mask] = 0.0
+        
+    if args.unique_seq:
+        unique_seq_mask = ratio.index.to_numpy()[:, None] >= (ratio.columns.to_numpy()[None, :] * 2)
+        ratio[unique_seq_mask] = 0.0
     
     fig, ax = plt.subplots(figsize=(12, 7))
     sns.heatmap(
@@ -68,7 +73,7 @@ def plot_heat_map():
         temp[mask] = 0
         _max_value(temp, 'green', 2)
         
-    ax.set_title('Relative Speedup per Matrix Size (N) for Fork-Join Element-wise Addition')
+    ax.set_title(f'Relative Speedup per Matrix Size (N) for Fork-Join {BM_Parser.json_file.stem.split('-')[0]}')
     if args.legend:
         box = ax.get_position()
         ax.set_position((box.x0, box.y0 + box.height * 0.1, box.width, box.height * 0.9))

@@ -3,7 +3,7 @@
 using namespace elementwise_SplittableMatrix;
 
 #define MIN_RANGE 1 << 2
-#define MAX_RANGE 1 << 17
+#define MAX_RANGE 1 << 15
 #define BENCHMARK_APPLY()           \
     RangeMultiplier(2)              \
     ->MeasureProcessCPUTime()       \
@@ -38,10 +38,8 @@ void MAIN_INIT(int argc, char** argv) {
     X(4096)            \
     X(8192)            \
     X(16384)           \
-    X(32768)           \
-    X(65536)           \
-    X(131072)
-
+    X(32768)
+    
 #define BENCHMARK_FORKJOIN_THRESHOLD(THRESHOLD)                             \
     BENCHMARK_DEFINE_F(BinaryFixture, BM_ForkJoin_Add_T##THRESHOLD)         \
     (benchmark::State& state) {                                             \
