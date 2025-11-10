@@ -4,19 +4,11 @@ DIR = $(CURDIR)
 # Include environment variables
 include ./.env
 
-# Enable OpenMP (only for hybrid/grid benchmarks, not baseline)
+# Enable OpenMP
 MACRO += -DOMP_ENABLE
 
 # Enable MPI
 MACRO += -DUSE_MPI
-
-# Special handling for baseline: disable OpenMP
-# The baseline benchmark is pure MPI only and doesn't use OpenMP
-# Compiling with OpenMP enabled causes runtime errors when MPI processes
-# try to initialize the OpenMP runtime but don't actually use it
-BASELINE_MACRO := $(filter-out -DOMP_ENABLE,$(MACRO))
-BASELINE_CXXFLAGS := $(filter-out -fopenmp,$(EXTRA_CXXFLAGS))
-BASELINE_LDFLAGS := $(filter-out -lomp,$(LDFLAGS))
 
 # MPI flags (detected from mpicxx --showme)
 MPI_INCLUDE = -I/usr/lib/x86_64-linux-gnu/openmpi/include -I/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi
@@ -42,8 +34,3 @@ EXTRA_CXXFLAGS += -Rpass=vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=
 
 # Include parent Makefile
 include ../Makefile
-
-# Override compile rule for baseline (no OpenMP)
-$(BUILD)/BM_MatMul_MPI_Baseline.exe: $(DIR)/BM_MatMul_MPI_Baseline.cpp $(ROOT)/performance/Makefile $(DIR)/Makefile
-	@echo -e "$(YELLOW)Compiling baseline WITHOUT OpenMP...$(RESET)"
-	$(CXX) $(WARNING) $(BASELINE_MACRO) -std=c++23 -O3 $(BASELINE_CXXFLAGS) $(MPI_INCLUDE) $(INCLUDES) -MMD -MP $< -o $@ -lbenchmark -lpthread $(MPI_LIBS)

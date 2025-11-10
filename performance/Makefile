@@ -2,6 +2,7 @@ CXX			:= clang++
 EXECUTE		:= 
 MPI_NP		:= 1
 HOSTFILE	:=
+OMP_NUM_THREADS	:= 
 
 # Makefile
 ROOT 			:= $(abspath $(dir $(abspath $(dir $(DIR)))))
@@ -50,16 +51,31 @@ $(info $(META_MESS))
 define EXECUTE_MACRO
 @echo -e $(GREEN_LINE)
 @echo -e "Executing $(GREEN)$(1)$(RESET) with MPI_NP=$(GREEN)$(MPI_NP)$(RESET)"
+@if [ -n "$(OMP_NUM_THREADS)" ]; then \
+	echo -e "OMP_NUM_THREADS=$(GREEN)$(OMP_NUM_THREADS)$(RESET)"; \
+fi
 @echo -e $(GREEN_LINE)
 $(eval BENCHMARK_OUT_FILE := $(LOGGING)/$(basename $(notdir $(1)))-$(shell date +"%y-%m-%d_%H-%M-%S").$(BENCHMARK_OUT_FORMAT))
 @if [ $(MPI_NP) -gt 1 ]; then \
 	if [ -n "$(HOSTFILE)" ]; then \
-		mpirun -np $(MPI_NP) --hostfile $(HOSTFILE) $(abspath $(1)) --benchmark_out="$(BENCHMARK_OUT_FILE)"; \
+		if [ -n "$(OMP_NUM_THREADS)" ]; then \
+			OMP_NUM_THREADS=$(OMP_NUM_THREADS) mpirun -np $(MPI_NP) --hostfile $(HOSTFILE) $(abspath $(1)) --benchmark_out="$(BENCHMARK_OUT_FILE)"; \
+		else \
+			mpirun -np $(MPI_NP) --hostfile $(HOSTFILE) $(abspath $(1)) --benchmark_out="$(BENCHMARK_OUT_FILE)"; \
+		fi; \
 	else \
-		mpirun -np $(MPI_NP) $(abspath $(1)) --benchmark_out="$(BENCHMARK_OUT_FILE)"; \
+		if [ -n "$(OMP_NUM_THREADS)" ]; then \
+			OMP_NUM_THREADS=$(OMP_NUM_THREADS) mpirun -np $(MPI_NP) $(abspath $(1)) --benchmark_out="$(BENCHMARK_OUT_FILE)"; \
+		else \
+			mpirun -np $(MPI_NP) $(abspath $(1)) --benchmark_out="$(BENCHMARK_OUT_FILE)"; \
+		fi; \
 	fi; \
 else \
-	$(abspath $(1)) --benchmark_out="$(BENCHMARK_OUT_FILE)"; \
+	if [ -n "$(OMP_NUM_THREADS)" ]; then \
+		OMP_NUM_THREADS=$(OMP_NUM_THREADS) $(abspath $(1)) --benchmark_out="$(BENCHMARK_OUT_FILE)"; \
+	else \
+		$(abspath $(1)) --benchmark_out="$(BENCHMARK_OUT_FILE)"; \
+	fi; \
 fi
 endef
 

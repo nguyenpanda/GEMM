@@ -19,21 +19,24 @@ void MAIN_INIT(int argc, char** argv) {
     
     if (rank == 0) {
         printf(GREEN "==========================\n" RESET);
-        printf("MPI Grid Matrix Multiplication\n");
+        printf("MPI+OpenMP Hybrid Grid Matrix Multiplication\n");
         printf(GREEN "==========================\n" RESET);
         
         int size;
         MPI_Comm_size(MPI_COMM_WORLD, &size);
+        int num_threads = omp_get_max_threads();
         printf("MPI_COMM_SIZE = %d\n", size);
         printf("GRID_SIZE = %d x %d\n", (int)std::sqrt(size), (int)std::sqrt(size));
+        printf("OMP_NUM_THREADS = %d\n", num_threads);
         
         benchmark::AddCustomContext("MPI_COMM_SIZE", std::to_string(size));
         benchmark::AddCustomContext("GRID_SIZE", std::to_string((int)std::sqrt(size)));
+        benchmark::AddCustomContext("OMP_NUM_THREADS", std::to_string(num_threads));
     }
 }
 
-#define BENCHMARK_MPI_GRID_MATMUL()                                                          \
-    BENCHMARK_DEFINE_F(BinaryFixture, BM_MPI_GridMatMul)                                     \
+#define BENCHMARK_MATMUL_HYBRID_GRID()                                                          \
+    BENCHMARK_DEFINE_F(BinaryFixture, BM_MatMul_Hybrid_Grid)                                     \
     (benchmark::State& state) {                                                              \
         double max_elapsed_second;                                                           \
         int rank;                                                                            \
@@ -41,7 +44,7 @@ void MAIN_INIT(int argc, char** argv) {
         for (auto _ : state) {                                                               \
             MPI_Barrier(MPI_COMM_WORLD);                                                     \
             auto start = std::chrono::high_resolution_clock::now();                          \
-            ufunc::matmul::MPIGridForkJoin<float>::operate(*out, *lhs, *rhs);                \
+            ufunc::matmul::HybridGrid<float>::operate(*out, *lhs, *rhs);                  \
             auto end = std::chrono::high_resolution_clock::now();                            \
             MPI_Barrier(MPI_COMM_WORLD);                                                     \
             auto duration = std::chrono::duration_cast<std::chrono::duration<double>>(       \
@@ -52,8 +55,8 @@ void MAIN_INIT(int argc, char** argv) {
             state.SetIterationTime(max_elapsed_second);                                      \
         }                                                                                    \
     }                                                                                        \
-    BENCHMARK_REGISTER_F(BinaryFixture, BM_MPI_GridMatMul)->BENCHMARK_APPLY();
+    BENCHMARK_REGISTER_F(BinaryFixture, BM_MatMul_Hybrid_Grid)->BENCHMARK_APPLY();
 
-BENCHMARK_MATMUL_MPI_GRID()
+BENCHMARK_MATMUL_HYBRID_GRID()
 
 CUSTOM_MPI_BENCHMARK_MAIN();
