@@ -1,5 +1,7 @@
 CXX			:= clang++
 EXECUTE		:= 
+MPI_NP		:= 1
+HOSTFILE	:=
 
 # Makefile
 ROOT 			:= $(abspath $(dir $(abspath $(dir $(DIR)))))
@@ -47,10 +49,18 @@ $(info $(META_MESS))
 # GOOGLE BENCHMARK
 define EXECUTE_MACRO
 @echo -e $(GREEN_LINE)
-@echo -e "Executing $(GREEN)$(1)$(RESET)"
+@echo -e "Executing $(GREEN)$(1)$(RESET) with MPI_NP=$(GREEN)$(MPI_NP)$(RESET)"
 @echo -e $(GREEN_LINE)
 $(eval BENCHMARK_OUT_FILE := $(LOGGING)/$(basename $(notdir $(1)))-$(shell date +"%y-%m-%d_%H-%M-%S").$(BENCHMARK_OUT_FORMAT))
-$(abspath $(1)) --benchmark_out="$(BENCHMARK_OUT_FILE)"
+@if [ $(MPI_NP) -gt 1 ]; then \
+	if [ -n "$(HOSTFILE)" ]; then \
+		mpirun -np $(MPI_NP) --hostfile $(HOSTFILE) $(abspath $(1)) --benchmark_out="$(BENCHMARK_OUT_FILE)"; \
+	else \
+		mpirun -np $(MPI_NP) $(abspath $(1)) --benchmark_out="$(BENCHMARK_OUT_FILE)"; \
+	fi; \
+else \
+	$(abspath $(1)) --benchmark_out="$(BENCHMARK_OUT_FILE)"; \
+fi
 endef
 
 .PHONY: help

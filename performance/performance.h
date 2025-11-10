@@ -4,6 +4,12 @@
 #include "gemm.h"
 #include "fixture.h"
 #include <benchmark/benchmark.h>
+#include <chrono>
+
+// MPI support (optional - only include if using MPI benchmarks)
+#ifdef USE_MPI
+#include <openmpi/mpi.h>
+#endif
 
 static size_t MATRIX_RDIM;
 static size_t MATRIX_CDIM;
@@ -33,7 +39,6 @@ void MAIN_INIT(int argc, char** argv);
 #define CUSTOM_BENCHMARK_MAIN() 											\
 	int main(int argc, char** argv) { 										\
 		MAIN_INIT(argc, argv);										 		\
-		benchmark::MaybeReenterWithoutASLR(argc, argv); 					\
 		char arg0_default[] = "benchmark"; 									\
 		char* args_default = reinterpret_cast<char*>(arg0_default); 		\
 		if (!argv) { 														\
@@ -47,5 +52,33 @@ void MAIN_INIT(int argc, char** argv);
 		return 0; 															\
 	} 																		\
 	int main(int, char**)
+
+#ifdef USE_MPI
+// NullReporter disables output from non-root MPI ranks
+class NullReporter : public ::benchmark::BenchmarkReporter {
+public:
+    bool ReportContext(const Context&) override { return true; }
+    void ReportRuns(const std::vector<Run>&) override {}
+    void Finalize() override {}
+};
+
+#define CUSTOM_MPI_BENCHMARK_MAIN()                                         \
+	int main(int argc, char** argv) {                                       \
+		MPI_Init(&argc, &argv);                                             \
+		int rank;                                                           \
+		MPI_Comm_rank(MPI_COMM_WORLD, &rank);                               \
+		MAIN_INIT(argc, argv);                                              \
+		::benchmark::Initialize(&argc, argv);                               \
+		if (rank == 0) {                                                    \
+			::benchmark::RunSpecifiedBenchmarks();                          \
+		} else {                                                            \
+			NullReporter null;                                              \
+			::benchmark::RunSpecifiedBenchmarks(&null);                     \
+		}                                                                   \
+		MPI_Finalize();                                                     \
+		return 0;                                                           \
+	}                                                                       \
+	int main(int, char**)
+#endif // USE_MPI
 
 #endif // PERFORMANCE_H

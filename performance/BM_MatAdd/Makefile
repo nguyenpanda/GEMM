@@ -7,7 +7,7 @@ MACRO += -DOMP_ENABLE
 # CXXFLAGS += -fno-vectorize -fno-slp-vectorize
 
 # Allow SIMD instruction
-CXXFLAGS += -mavx512f -march=native
+CXXFLAGS += -mavx2 -march=native
 
 # SIMD Report
 CXXFLAGS += -Rpass=vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize

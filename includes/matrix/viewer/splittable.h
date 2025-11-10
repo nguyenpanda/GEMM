@@ -17,8 +17,11 @@ public:
 	SplittableMatrix(const SplittableMatrix<T>& other);
 	SplittableMatrix<T>& operator=(const SplittableMatrix<T>& other);
 	SplittableMatrix<T>* split(size_t i, size_t j) const;
+	SplittableMatrix<T>* view(size_t startRow, size_t startCol, size_t numRows, size_t numCols) const;
 	~SplittableMatrix() = default;
 	inline size_t map2Dto1DIndex(size_t i, size_t j) const;
+	inline T* getDataPointer() const; // Get pointer to first element of this view
+	inline size_t getStride() const; // Get row stride (distance between consecutive rows)
 	inline T get(size_t index) const; // USE TRUE INDEX
 	inline void set(size_t index, T value); // USE TRUE INDEX
 	inline void print() const;
@@ -82,8 +85,30 @@ SplittableMatrix<T>* SplittableMatrix<T>::split(size_t i, size_t j) const {
 }
 
 template<class T>
+SplittableMatrix<T>* SplittableMatrix<T>::view(size_t startRow, size_t startCol, 
+                                                size_t numRows, size_t numCols) const {
+	return new SplittableMatrix<T>(
+		root,
+		rDis + startRow,
+		cDis + startCol,
+		numRows,
+		numCols
+	);
+}
+
+template<class T>
 inline size_t SplittableMatrix<T>::map2Dto1DIndex(size_t i, size_t j) const {
 	return (i + rDis) * root->cdim + (j + cDis);
+}
+
+template<class T>
+inline T* SplittableMatrix<T>::getDataPointer() const {
+	return &root->data[map2Dto1DIndex(0, 0)];
+}
+
+template<class T>
+inline size_t SplittableMatrix<T>::getStride() const {
+	return root->cdim;
 }
 
 template<class T>

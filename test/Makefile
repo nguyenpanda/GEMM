@@ -5,7 +5,7 @@ DIR = $(CURDIR)
 ARG += --operator @
 
 # SIMD instruction
-CXXFLAGS += -mavx512f -march=native -O3
+CXXFLAGS += -mavx2 -march=native -O3
 
 # Debug mode
 # CXXFLAGS += -g 
