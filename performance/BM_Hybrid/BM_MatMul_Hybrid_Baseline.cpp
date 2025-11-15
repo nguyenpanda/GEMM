@@ -2,12 +2,11 @@
 
 using namespace elementwise_SplittableMatrix_Distributed;
 
-#define MIN_RANGE 1 << 6
-#define MAX_RANGE 1 << 12
+#define MIN_RANGE 1 << 2
+#define MAX_RANGE 1 << 15
 #define BENCHMARK_APPLY()           \
     RangeMultiplier(2)              \
     ->UseManualTime()               \
-    ->Unit(benchmark::kSecond)      \
     ->Range(MIN_RANGE, MAX_RANGE)
 
 #pragma clang diagnostic push

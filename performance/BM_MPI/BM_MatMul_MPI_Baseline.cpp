@@ -5,7 +5,7 @@
 using namespace elementwise_SplittableMatrix_Distributed;
 
 #define MIN_RANGE 1 << 2
-#define MAX_RANGE 1 << 15
+#define MAX_RANGE 1 << 14
 #define BENCHMARK_APPLY()           \
     RangeMultiplier(2)              \
     ->UseManualTime()               \

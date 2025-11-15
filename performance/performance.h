@@ -64,22 +64,46 @@ public:
 };
 
 #define CUSTOM_MPI_BENCHMARK_MAIN()                                         \
-	int main(int argc, char** argv) {                                       \
-		MPI_Init(&argc, &argv);                                             \
-		int rank;                                                           \
-		MPI_Comm_rank(MPI_COMM_WORLD, &rank);                               \
-		MAIN_INIT(argc, argv);                                              \
-		::benchmark::Initialize(&argc, argv);                               \
-		if (rank == 0) {                                                    \
-			::benchmark::RunSpecifiedBenchmarks();                          \
-		} else {                                                            \
-			NullReporter null;                                              \
-			::benchmark::RunSpecifiedBenchmarks(&null);                     \
-		}                                                                   \
-		MPI_Finalize();                                                     \
-		return 0;                                                           \
-	}                                                                       \
-	int main(int, char**)
+    int main(int argc, char** argv) {                                       \
+        MPI_Init(&argc, &argv);                                             \
+        int rank;                                                           \
+        MPI_Comm_rank(MPI_COMM_WORLD, &rank);                               \
+                                                                            \
+        /* Filter benchmark_out flags BEFORE Initialize */                  \
+        if (rank != 0) {                                                    \
+            std::vector<std::string> args(argv, argv + argc);               \
+            std::vector<std::string> filtered;                              \
+            for (size_t i = 0; i < args.size(); i++) {                      \
+                if (args[i].rfind("--benchmark_out", 0) == 0 ||             \
+                    args[i].rfind("--benchmark_out_format", 0) == 0) {      \
+                    continue;                                               \
+                }                                                           \
+                filtered.push_back(args[i]);                                \
+            }                                                               \
+            args = filtered;                                                \
+                                                                            \
+            /* Rebuild argc/argv */                                         \
+            static std::vector<char*> new_argv;                             \
+            new_argv.clear();                                               \
+            for (auto& s : args) new_argv.push_back(const_cast<char*>(s.c_str())); \
+            argc = (int)new_argv.size();                                    \
+            argv = new_argv.data();                                         \
+        }                                                                   \
+                                                                            \
+        MAIN_INIT(argc, argv);                                              \
+        ::benchmark::Initialize(&argc, argv);                               \
+                                                                            \
+        if (rank == 0) {                                                    \
+            ::benchmark::RunSpecifiedBenchmarks();                          \
+        } else {                                                            \
+            NullReporter null;                                              \
+            ::benchmark::RunSpecifiedBenchmarks(&null);                     \
+        }                                                                   \
+                                                                            \
+        MPI_Finalize();                                                     \
+        return 0;                                                           \
+    }                                                                       \
+    int main(int, char**)
 #endif // MPI_ENABLE
 
 #endif // PERFORMANCE_H
