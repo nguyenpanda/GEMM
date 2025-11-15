@@ -7,8 +7,9 @@
 #include <chrono>
 
 // MPI support (optional - only include if using MPI benchmarks)
-#ifdef USE_MPI
-#include <openmpi/mpi.h>
+#ifdef MPI_ENABLE
+#include <mpi.h>
+#include "fixtured.h"
 #endif
 
 static size_t MATRIX_RDIM;
@@ -53,7 +54,7 @@ void MAIN_INIT(int argc, char** argv);
 	} 																		\
 	int main(int, char**)
 
-#ifdef USE_MPI
+#ifdef MPI_ENABLE
 // NullReporter disables output from non-root MPI ranks
 class NullReporter : public ::benchmark::BenchmarkReporter {
 public:
@@ -79,6 +80,6 @@ public:
 		return 0;                                                           \
 	}                                                                       \
 	int main(int, char**)
-#endif // USE_MPI
+#endif // MPI_ENABLE
 
 #endif // PERFORMANCE_H

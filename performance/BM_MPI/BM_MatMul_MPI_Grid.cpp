@@ -1,6 +1,6 @@
 #include "../performance.h"
 
-using namespace elementwise_SplittableMatrix;
+using namespace elementwise_SplittableMatrix_Distributed;
 
 #define MIN_RANGE 1 << 6
 #define MAX_RANGE 1 << 12
@@ -41,7 +41,7 @@ void MAIN_INIT(int argc, char** argv) {
         for (auto _ : state) {                                                               \
             MPI_Barrier(MPI_COMM_WORLD);                                                     \
             auto start = std::chrono::high_resolution_clock::now();                          \
-            ufunc::matmul::MPIGridForkJoin<float>::operate(*out, *lhs, *rhs);                \
+            ufunc::matmuld::MPIGridForkJoin<float>::operate(*out, *lhs, *rhs);                \
             auto end = std::chrono::high_resolution_clock::now();                            \
             MPI_Barrier(MPI_COMM_WORLD);                                                     \
             auto duration = std::chrono::duration_cast<std::chrono::duration<double>>(       \
@@ -54,6 +54,6 @@ void MAIN_INIT(int argc, char** argv) {
     }                                                                                        \
     BENCHMARK_REGISTER_F(BinaryFixture, BM_MPI_GridMatMul)->BENCHMARK_APPLY();
 
-BENCHMARK_MATMUL_MPI_GRID()
+BENCHMARK_MPI_GRID_MATMUL()
 
 CUSTOM_MPI_BENCHMARK_MAIN();

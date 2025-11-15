@@ -1,9 +1,9 @@
 #include "../performance.h"
 
-using namespace elementwise_SplittableMatrix;
+using namespace elementwise_SplittableMatrix_Distributed;
 
 #define MIN_RANGE 1 << 6
-#define MAX_RANGE 1 << 12
+#define MAX_RANGE 1 << 14
 #define BENCHMARK_APPLY()           \
     RangeMultiplier(2)              \
     ->UseManualTime()               \
@@ -52,7 +52,7 @@ void MAIN_INIT(int argc, char** argv) {
             auto start = std::chrono::high_resolution_clock::now();                          \
                                                                                              \
             /* Use MPIBaseline class from matmul.h */                                       \
-            ufunc::matmul::MPIBaseline<float>::operate(*out, *lhs, *rhs);                    \
+            ufunc::matmuld::MPIBaseline<float>::operate(*out, *lhs, *rhs);                    \
                                                                                              \
             MPI_Barrier(MPI_COMM_WORLD);                                                     \
             auto end = std::chrono::high_resolution_clock::now();                            \

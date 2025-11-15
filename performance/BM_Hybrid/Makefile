@@ -8,7 +8,7 @@ include ./.env
 MACRO += -DOMP_ENABLE
 
 # Enable MPI
-MACRO += -DUSE_MPI
+MACRO += -DMPI_ENABLE
 
 # MPI flags (detected from mpicxx --showme)
 MPI_INCLUDE = -I/usr/lib/x86_64-linux-gnu/openmpi/include -I/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi

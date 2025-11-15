@@ -1,6 +1,6 @@
 #include "../performance.h"
 
-using namespace elementwise_SplittableMatrix;
+using namespace elementwise_SplittableMatrix_Distributed;
 
 #define MIN_RANGE 1 << 6
 #define MAX_RANGE 1 << 12
@@ -44,7 +44,7 @@ void MAIN_INIT(int argc, char** argv) {
         for (auto _ : state) {                                                               \
             MPI_Barrier(MPI_COMM_WORLD);                                                     \
             auto start = std::chrono::high_resolution_clock::now();                          \
-            ufunc::matmul::HybridGrid<float>::operate(*out, *lhs, *rhs);                  \
+            ufunc::matmuld::HybridGrid<float>::operate(*out, *lhs, *rhs);                  \
             auto end = std::chrono::high_resolution_clock::now();                            \
             MPI_Barrier(MPI_COMM_WORLD);                                                     \
             auto duration = std::chrono::duration_cast<std::chrono::duration<double>>(       \
