@@ -33,7 +33,7 @@ void MAIN_INIT(int argc, char** argv) {
 }
 
 #define BENCHMARK_MPI_GRID_MATMUL()                                                          \
-    BENCHMARK_DEFINE_F(BinaryFixture, BM_MPI_GridMatMul)                                     \
+    BENCHMARK_DEFINE_F(BinaryFixture, BM_MPI_Strassen)                                     \
     (benchmark::State& state) {                                                              \
         double max_elapsed_second;                                                           \
         int rank;                                                                            \
@@ -41,18 +41,17 @@ void MAIN_INIT(int argc, char** argv) {
         for (auto _ : state) {                                                               \
             MPI_Barrier(MPI_COMM_WORLD);                                                     \
             auto start = std::chrono::high_resolution_clock::now();                          \
-            ufunc::matmul::MPIGridForkJoin<float>::operate(*out, *lhs, *rhs);                \
+            CODE_FOR_DEBUG_MODE(printf("Rank %d: Starting multiplication\n", rank);) \
+            ufunc::matmul::MPIStrassen<float>::operate(*out, *lhs, *rhs);                \
             auto end = std::chrono::high_resolution_clock::now();                            \
             MPI_Barrier(MPI_COMM_WORLD);                                                     \
             auto duration = std::chrono::duration_cast<std::chrono::duration<double>>(       \
                 end - start);                                                                \
             double elapsed_seconds = duration.count();                                       \
-            MPI_Allreduce(&elapsed_seconds, &max_elapsed_second, 1, MPI_DOUBLE, MPI_MAX,    \
-                          MPI_COMM_WORLD);                                                   \
-            state.SetIterationTime(max_elapsed_second);                                      \
+            state.SetIterationTime(max_elapsed_second);                                                                                                         \
         }                                                                                    \
     }                                                                                        \
-    BENCHMARK_REGISTER_F(BinaryFixture, BM_MPI_GridMatMul)->BENCHMARK_APPLY();
+    BENCHMARK_REGISTER_F(BinaryFixture, BM_MPI_Strassen)->BENCHMARK_APPLY();
 
 BENCHMARK_MPI_GRID_MATMUL()
 

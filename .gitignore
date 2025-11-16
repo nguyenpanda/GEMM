@@ -1,7 +1,7 @@
 .DS_Store
 
 .venv
-venv
+myenv
 __pycache__
 
 .vscode

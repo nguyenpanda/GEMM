@@ -27,6 +27,18 @@ public:
 			}
 		}
 	}
+
+		static inline void re_operate(SplittableMatrix<T>& out, const SplittableMatrix<T>& lhs, const SplittableMatrix<T>& rhs)  {
+		for (size_t i = 0; i < out.rdim; i++) {
+			#pragma omp simd
+			for (size_t j = 0; j < out.cdim; j++) {
+				size_t out_idx = out.map2Dto1DIndex(i, j);
+				size_t lhs_idx = lhs.map2Dto1DIndex(i, j);
+				size_t rhs_idx = rhs.map2Dto1DIndex(i, j);
+				out.root->data[out_idx] = lhs.root->data[lhs_idx] - rhs.root->data[rhs_idx];
+			}
+		}
+	}
 };
 
 
@@ -53,6 +65,21 @@ public:
 					size_t lhs_idx = lhs.map2Dto1DIndex(i, j);
 					size_t rhs_idx = rhs.map2Dto1DIndex(i, j);
 					out.root->data[out_idx] = lhs.root->data[lhs_idx] + rhs.root->data[rhs_idx];
+				}
+			}
+		}
+	}
+
+	static inline void re_operate(SplittableMatrix<T>& out, const SplittableMatrix<T>& lhs, const SplittableMatrix<T>& rhs) {
+		#pragma omp parallel
+		{
+			#pragma omp for simd
+			for (size_t i = 0; i < out.rdim; i++) {
+				for (size_t j = 0; j < out.cdim; j++) {
+					size_t out_idx = out.map2Dto1DIndex(i, j);
+					size_t lhs_idx = lhs.map2Dto1DIndex(i, j);
+					size_t rhs_idx = rhs.map2Dto1DIndex(i, j);
+					out.root->data[out_idx] = lhs.root->data[lhs_idx] - rhs.root->data[rhs_idx];
 				}
 			}
 		}

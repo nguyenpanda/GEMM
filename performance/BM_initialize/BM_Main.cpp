@@ -67,9 +67,10 @@ BENCHMARK_DEFINE_F(UnaryBufferFixture, BM_Random_Omp_IBM)(benchmark::State& stat
 
     for (auto _ : state) {
         const size_t N = buffer->size();
-        #pragma omp target map(to: N) map(tofrom: buffer->data)
+        #pragma omp target map(to: N) 
         #pragma omp parallel for simd
-        for (size_t i = 0; i < N; i++) {
+        for (size_t i = 0; i < N; i++) 
+        {
             buffer->data[i] = FloatRandom();
         }
     }   

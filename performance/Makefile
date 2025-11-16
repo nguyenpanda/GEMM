@@ -1,4 +1,4 @@
-CXX			:= clang++
+CXX			:= g++
 EXECUTE		:= 
 MPI_NP		:= 1
 HOSTFILE	:=
@@ -24,7 +24,7 @@ endif
 
 # Arguments
 MACRO		+= $(EXTRA_MACRO)
-CXXFLAGS	+= $(EXTRA_CXXFLAGS) -std=c++23 -O3
+CXXFLAGS	+= $(EXTRA_CXXFLAGS) -std=c++17 -O3
 INCLUDES	+= -I$(ROOT)/includes
 WARNING		+= -Wall -Wextra
 LDFLAGS		+= -lbenchmark

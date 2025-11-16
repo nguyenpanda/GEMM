@@ -79,6 +79,25 @@ public:
 		return 0;                                                           \
 	}                                                                       \
 	int main(int, char**)
+
+#define CUSTOM_MPI_THREAD_BENCHMARK_MAIN()                                  \
+	int main(int argc, char** argv) {                                       \
+		int provided;                                                       \
+		MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided);                                           \
+		int rank;                                                           \
+		MPI_Comm_rank(MPI_COMM_WORLD, &rank);                               \
+		MAIN_INIT(argc, argv);                                              \
+		::benchmark::Initialize(&argc, argv);                               \
+		if (rank == 0) {                                                    \
+			::benchmark::RunSpecifiedBenchmarks();                          \
+		} else {                                                            \
+			NullReporter null;                                              \
+			::benchmark::RunSpecifiedBenchmarks(&null);                     \
+		}                                                                   \
+		MPI_Finalize();                                                     \
+		return 0;                                                           \
+	}                                                                       \
+	int main(int, char**)
 #endif // USE_MPI
 
 #endif // PERFORMANCE_H

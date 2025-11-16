@@ -7,9 +7,12 @@
 
 #ifdef USE_MPI
 #include <mpi.h>
+#include <thread>
+#include <queue>
 #include <cmath>
 #include <vector>
 #include <algorithm>
+#include <atomic>
 #endif
 
 namespace ufunc {
@@ -257,7 +260,188 @@ template<class T>
 size_t OmpForkJoin<T>::threshold = -1;
 
 
-#ifdef USE_MPI
+template<class T>
+class OmpStrassen {
+public:
+	static inline void operate(SplittableMatrix<T>& out, const SplittableMatrix<T>& lhs, const SplittableMatrix<T>& rhs) 
+	{
+		#pragma omp parallel
+		#pragma omp single
+		StrassenRecursive(out, lhs, rhs, 0);
+	}
+
+	static void set_threshold(size_t _threshold) 
+	{
+		threshold = _threshold;
+	}
+
+protected:
+	static size_t threshold;
+	SplittableMatrix<T>* out;
+	const SplittableMatrix<T>* lhs;
+	const SplittableMatrix<T>* rhs;
+
+protected:
+	OmpStrassen(SplittableMatrix<T>* out, const SplittableMatrix<T>* lhs, const SplittableMatrix<T>* rhs)
+		: out(out), lhs(lhs), rhs(rhs) {}
+	
+	static void StrassenRecursive(SplittableMatrix<T>& C, const SplittableMatrix<T>& A, const SplittableMatrix<T>& B, int depth) 
+	{
+        // const size_t N = std::max(C.rdim, C.cdim);
+		const size_t N = C.cdim;
+        if (N <= threshold) 
+		{
+            Seq<T>::operate(C, A, B);
+            return;
+        }
+
+		size_t hsize = N / 2;
+		size_t rem_size = N - hsize;
+
+        // split A, B, C into 4 submatrices using SplittableMatrix::split or view()
+        SplittableMatrix<T>* A00 = A.split(0, 0);
+		SplittableMatrix<T>* A01 = A.split(0, 1);
+		SplittableMatrix<T>* A10 = A.split(1, 0);
+		SplittableMatrix<T>* A11 = A.split(1, 1);
+		SplittableMatrix<T>* B00 = B.split(0, 0);
+		SplittableMatrix<T>* B01 = B.split(0, 1);
+		SplittableMatrix<T>* B10 = B.split(1, 0);
+		SplittableMatrix<T>* B11 = B.split(1, 1);
+
+		SplittableMatrix<T>* S0 = new SplittableMatrix<T>(new Buffer<T>(hsize), hsize);
+		SplittableMatrix<T>* S1 = new SplittableMatrix<T>(new Buffer<T>(hsize), hsize);
+		SplittableMatrix<T>* S2 = new SplittableMatrix<T>(new Buffer<T>(hsize), hsize);
+		SplittableMatrix<T>* S3 = new SplittableMatrix<T>(new Buffer<T>(hsize), hsize);
+		SplittableMatrix<T>* S4 = new SplittableMatrix<T>(new Buffer<T>(hsize), hsize);
+		SplittableMatrix<T>* S5 = new SplittableMatrix<T>(new Buffer<T>(hsize), hsize);
+		SplittableMatrix<T>* S6 = new SplittableMatrix<T>(new Buffer<T>(hsize), hsize);
+		SplittableMatrix<T>* S7 = new SplittableMatrix<T>(new Buffer<T>(hsize), hsize);
+		SplittableMatrix<T>* S8 = new SplittableMatrix<T>(new Buffer<T>(hsize), hsize);
+		SplittableMatrix<T>* S9 = new SplittableMatrix<T>(new Buffer<T>(hsize), hsize);
+
+		#pragma omp taskgroup
+		{
+			#pragma omp task shared(S0) private(A00, A11)
+			{
+				ufunc::addition::OmpVanilla<T>::operate(*S0, *A00, *A11); // S0 = A00 + A11
+			}
+			#pragma omp task shared(S1) private(B00, B11)
+			{
+				ufunc::addition::OmpVanilla<T>::operate(*S1, *B00, *B11); // S1 = B00 + B11
+			}
+			#pragma omp task shared(S2) private(A10, A11)
+			{
+				ufunc::addition::OmpVanilla<T>::operate(*S2, *A10, *A11); 
+			}
+			#pragma omp task shared(S3) private(B01, B11)
+			{
+				ufunc::addition::OmpVanilla<T>::re_operate(*S3, *B01, *B11); 
+			}
+			#pragma omp task shared(S4) private(B10, B00)
+			{
+				ufunc::addition::OmpVanilla<T>::re_operate(*S4, *B10, *B00); 
+			}
+			#pragma omp task shared(S5) private(A00, A01)
+			{
+				ufunc::addition::OmpVanilla<T>::operate(*S5, *A00, *A01); 
+			}
+			#pragma omp task shared(S6) private(A10, A00)
+			{
+				ufunc::addition::OmpVanilla<T>::re_operate(*S6, *A10, *A00); 
+			}
+			#pragma omp task shared(S7) private(B00, B01)
+			{
+				ufunc::addition::OmpVanilla<T>::operate(*S7, *B00, *B01);
+			}
+			#pragma omp task shared(S8) private(A01, A11)
+			{
+				ufunc::addition::OmpVanilla<T>::re_operate(*S8, *A01, *A11);
+			}
+			#pragma omp task shared(S9) private(B10, B11)
+			{
+				ufunc::addition::OmpVanilla<T>::operate(*S9, *B10, *B11); 
+			}
+		}
+		#pragma omp taskwait
+		SplittableMatrix<T>* M[7];
+		for (int i = 0; i < 7; i++) 
+		{
+			M[i] = new SplittableMatrix<T>(new Buffer<T>(hsize), hsize);
+		}
+		
+        #pragma omp taskgroup
+		{
+			#pragma omp task firstprivate(depth) shared(M) 
+			{
+				StrassenRecursive(*M[0], *S0, *S1, depth +1);
+			}
+			#pragma omp task firstprivate(depth) shared(M) 
+			{
+				StrassenRecursive(*M[1], *S2, *B00, depth +1);
+			}
+			#pragma omp task firstprivate(depth) shared(M)
+			{
+				StrassenRecursive(*M[2], *A00, *S3, depth +1);
+			}
+			#pragma omp task firstprivate(depth) shared(M) 
+			{
+				StrassenRecursive(*M[3], *A11, *S4, depth +1);
+			}
+			#pragma omp task firstprivate(depth) shared(M) 
+			{
+				StrassenRecursive(*M[4], *S5, *B11, depth +1);
+			}
+			#pragma omp task firstprivate(depth) shared(M)
+			{
+				StrassenRecursive(*M[5], *S6, *S7, depth +1);
+			}
+			#pragma omp task firstprivate(depth) shared(M) 
+			{
+				StrassenRecursive(*M[6], *S8, *S9, depth +1);
+			}
+		}
+
+		delete A00; delete A01; delete A10; delete A11;
+		delete B00; delete B01; delete B10; delete B11;
+		delete S0; delete S1; delete S2; delete S3; delete S4;
+		delete S5; delete S6; delete S7; delete S8; delete S9;
+		
+		
+		ufunc::addition::OmpVanilla<T>::operate(*M[6], *M[6], *M[0]);
+		#pragma omp taskwait
+		ufunc::addition::OmpVanilla<T>::operate(*M[6], *M[6], *M[3]);
+		#pragma omp taskwait
+		#pragma taskgroup
+		{
+			ufunc::addition::OmpVanilla<T>::re_operate(*C.split(0, 0), *M[6], *M[4]);
+
+			ufunc::addition::OmpVanilla<T>::operate(*C.split(0, 1), *M[2], *M[4]);
+
+
+			ufunc::addition::OmpVanilla<T>::operate(*C.split(1, 0), *M[1], *M[3]);
+
+			ufunc::addition::OmpVanilla<T>::operate(*M[5], *M[5], *M[0]);
+		}
+
+		ufunc::addition::OmpVanilla<T>::re_operate(*M[5], *M[5], *M[1]);
+		#pragma omp taskwait
+		ufunc::addition::OmpVanilla<T>::operate(*C.split(1, 1), *M[5], *M[2]);
+		#pragma omp taskwait
+
+		// Clean up
+		
+
+		for (int i = 0; i < 7; i++) {
+			delete M[i];
+		}
+	}
+};
+
+
+template<class T> 
+size_t OmpStrassen<T>::threshold = -1;
+
+// #ifdef USE_MPI
 // Baseline MPI implementation using simple row distribution and IKJ loop order
 template<class T>
 class MPIBaseline {
@@ -1088,10 +1272,638 @@ protected:
 		delete result_buffer;
 	}
 };
+
+
+
+template<class T>
+class HybridStrassen {
+public:
+	static inline void operate(SplittableMatrix<T>& out, const SplittableMatrix<T>& lhs, const SplittableMatrix<T>& rhs) 
+	{
+		int rank, nprocs; 
+    	MPI_Comm_rank(MPI_COMM_WORLD,&rank); 
+    	MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
+		MPI_Barrier(MPI_COMM_WORLD);
+		if (rank == 0)
+		{
+
+			std::thread scheduler_thread(scheduler_loop, nprocs );
+
+			StrassenRecursive(out, lhs,  rhs, 0);
+
+			for (int i = 1; i < nprocs; ++i) 
+				MPI_Send(NULL,0,MPI_BYTE,i,TAG_STOP,MPI_COMM_WORLD);
+			g_stop.store(true);
+
+			scheduler_thread.join();
+
+		}
+		else 
+		{
+			worker_loop(rank);
+		}
+	}
+
+	static void set_threshold(size_t _threshold) 
+	{
+		threshold = _threshold;
+	}
+
+protected:
+	static size_t threshold;
+	SplittableMatrix<T>* out;
+	const SplittableMatrix<T>* lhs;
+	const SplittableMatrix<T>* rhs;
+
+	static std::atomic<bool> g_stop;
+
+	enum {
+		TAG_TASK = 100, TAG_RESULT = 101, TAG_STOP = 102,
+		TAG_REQ_WORKER = 103, TAG_ASSIGN = 104, TAG_WORKER_FREE = 105
+	};
+
+	struct task
+	{
+		int size;
+		int caller;
+		int depth;
+	};
+
+	HybridStrassen(SplittableMatrix<T>* out, const SplittableMatrix<T>* lhs, const SplittableMatrix<T>* rhs)
+		: out(out), lhs(lhs), rhs(rhs) {}
+
+	static void worker_loop(int myRank)
+	{
+		while (true)
+		{
+			int flag = 0;
+			MPI_Status st;
+			MPI_Iprobe(0, TAG_STOP, MPI_COMM_WORLD, &flag, &st);
+			if (flag)
+			{
+				MPI_Recv(NULL, 0, MPI_BYTE, 0, TAG_STOP, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+				break;
+			}
+			
+			MPI_Iprobe(MPI_ANY_SOURCE, TAG_TASK, MPI_COMM_WORLD, &flag, &st);
+			if (!flag)
+			{
+				continue; 
+			}
+
+			task h;
+			MPI_Recv(&h, 3, MPI_INT, st.MPI_SOURCE, TAG_TASK, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+			int n = h.size;
+
+			SplittableMatrix<T> *A = new SplittableMatrix<T>(new Buffer<T>(n, n), n, n);
+			SplittableMatrix<T> *B = new SplittableMatrix<T>(new Buffer<T>(n, n), n, n);
+
+			MPI_Recv(A->root->data, n*n, sizeof(T) == 4 ? MPI_FLOAT : MPI_DOUBLE, st.MPI_SOURCE, TAG_TASK, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+			MPI_Recv(B->root->data, n*n, sizeof(T) == 4 ? MPI_FLOAT : MPI_DOUBLE, st.MPI_SOURCE, TAG_TASK, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+			StrassenRecursive(*A, *A, *B, h.depth);
+
+			MPI_Send(&h, 3, MPI_INT, h.caller, TAG_RESULT, MPI_COMM_WORLD);
+			MPI_Send(A->root->data, n*n, sizeof(T) == 4 ? MPI_FLOAT : MPI_DOUBLE, h.caller, TAG_RESULT, MPI_COMM_WORLD);
+			MPI_Send(&myRank, 1, MPI_INT, 0, TAG_WORKER_FREE, MPI_COMM_WORLD);
+
+		}
+	}
+
+	static int request_worker(int depth) 
+	{
+		MPI_Send(&depth, 1, MPI_INT, 0, TAG_REQ_WORKER, MPI_COMM_WORLD);
+		int worker; 
+		MPI_Recv(&worker, 1, MPI_INT, 0, TAG_ASSIGN, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+		return worker; 
+	}
+
+	static void send_data(SplittableMatrix<T>& a, SplittableMatrix<T>& b, int n, int depth, int worker, SplittableMatrix<T>& res)
+	{
+		task h {
+			.size = n,
+			.depth = depth
+		};
+		MPI_Comm_rank(MPI_COMM_WORLD, &h.caller);
+
+		MPI_Send(&h, 3, MPI_INT, worker, TAG_TASK, MPI_COMM_WORLD);
+
+		MPI_Send(a.root->data, n*n, sizeof(T) == 4 ? MPI_FLOAT : MPI_DOUBLE, worker, TAG_TASK, MPI_COMM_WORLD);
+		MPI_Send(b.root->data, n*n, sizeof(T) == 4 ? MPI_FLOAT : MPI_DOUBLE, worker, TAG_TASK, MPI_COMM_WORLD);
+		
+		// nhận kết quả
+		task rh;
+		MPI_Recv(&rh, 3, MPI_INT, worker, TAG_RESULT, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+		MPI_Recv(res.root->data, rh.size*rh.size, sizeof(T) == 4 ? MPI_FLOAT : MPI_DOUBLE, worker, TAG_RESULT, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+		
+	}
+
+	static inline void scheduler_loop(int nprocs)
+	{
+		std::queue<int> free_workers;
+		for (int w = 1; w < nprocs; ++w) 
+			free_workers.push(w);
+
+		MPI_Status st;
+
+		while (!g_stop)
+		{
+			int flag = 0;
+			MPI_Iprobe(MPI_ANY_SOURCE, TAG_REQ_WORKER, MPI_COMM_WORLD, &flag, &st);
+			if (flag)
+			{
+				int req_depth;
+				MPI_Recv(&req_depth, 1, MPI_INT, st.MPI_SOURCE, TAG_REQ_WORKER, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+				int assigned = -1;
+				if (!free_workers.empty())
+				{
+					assigned = free_workers.front();
+					free_workers.pop();
+				}
+				MPI_Send(&assigned, 1, MPI_INT, st.MPI_SOURCE, TAG_ASSIGN, MPI_COMM_WORLD);
+				continue;
+			}
+
+			MPI_Iprobe(MPI_ANY_SOURCE, TAG_WORKER_FREE, MPI_COMM_WORLD, &flag, &st);
+			if (flag)
+			{
+				int wid;
+				MPI_Recv(&wid, 1, MPI_INT, st.MPI_SOURCE, TAG_WORKER_FREE, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+				free_workers.push(wid);
+				continue;
+			}
+
+			std::this_thread::sleep_for(std::chrono::milliseconds(1));
+
+		}
+
+	}
+
+	static void Strassen_distributed(SplittableMatrix<T>& C, SplittableMatrix<T>& A, SplittableMatrix<T>& B, int depth)
+	{
+		int w = request_worker(depth);
+		if (w == -1)
+		{
+			#pragma omp parallel
+			{
+				#pragma omp single
+				{
+					StrassenRecursive(C, A, B, depth + 1);
+				}
+			}
+			// StrassenRecursive(C, A, B, depth + 1);
+			return;
+		}
+		else 
+		{
+			int out_id = -1;
+			send_data(A, B, A.cdim, depth, w, C);
+		}
+	}
+
+		
+	static void StrassenRecursive(SplittableMatrix<T>& C, const SplittableMatrix<T>& A, const SplittableMatrix<T>& B, int depth) 
+	{
+        // const size_t N = std::max(C.rdim, C.cdim);
+		const size_t N = C.cdim;
+        if (N <= threshold) 
+		{
+            Seq<T>::operate(C, A, B);
+            return;
+        }
+
+		size_t hsize = N / 2;
+		size_t rem_size = N - hsize;
+
+        // split A, B, C into 4 submatrices using SplittableMatrix::split or view()
+		SplittableMatrix<T>* A00 = A.split(0, 0);
+		SplittableMatrix<T>* A01 = A.split(0, 1);
+		SplittableMatrix<T>* A10 = A.split(1, 0);
+		SplittableMatrix<T>* A11 = A.split(1, 1);
+		SplittableMatrix<T>* B00 = B.split(0, 0);
+		SplittableMatrix<T>* B01 = B.split(0, 1);
+		SplittableMatrix<T>* B10 = B.split(1, 0);
+		SplittableMatrix<T>* B11 = B.split(1, 1);
+			
+
+		SplittableMatrix<T>* S0 = new SplittableMatrix<T>(new Buffer<T>(hsize), hsize);
+		SplittableMatrix<T>* S1 = new SplittableMatrix<T>(new Buffer<T>(hsize), hsize);
+		SplittableMatrix<T>* S2 = new SplittableMatrix<T>(new Buffer<T>(hsize), hsize);
+		SplittableMatrix<T>* S3 = new SplittableMatrix<T>(new Buffer<T>(hsize), hsize);
+		SplittableMatrix<T>* S4 = new SplittableMatrix<T>(new Buffer<T>(hsize), hsize);
+		SplittableMatrix<T>* S5 = new SplittableMatrix<T>(new Buffer<T>(hsize), hsize);
+		SplittableMatrix<T>* S6 = new SplittableMatrix<T>(new Buffer<T>(hsize), hsize);
+		SplittableMatrix<T>* S7 = new SplittableMatrix<T>(new Buffer<T>(hsize), hsize);
+		SplittableMatrix<T>* S8 = new SplittableMatrix<T>(new Buffer<T>(hsize), hsize);
+		SplittableMatrix<T>* S9 = new SplittableMatrix<T>(new Buffer<T>(hsize), hsize);
+
+		#pragma omp taskgroup
+		{
+			#pragma omp task shared(S0) private(A00, A11)
+			{
+				ufunc::addition::OmpVanilla<T>::operate(*S0, *A00, *A11); // S0 = A00 + A11
+			}
+			#pragma omp task shared(S1) private(B00, B11)
+			{
+				ufunc::addition::OmpVanilla<T>::operate(*S1, *B00, *B11); // S1 = B00 + B11
+			}
+			#pragma omp task shared(S2) private(A10, A11)
+			{
+				ufunc::addition::OmpVanilla<T>::operate(*S2, *A10, *A11); 
+			}
+			#pragma omp task shared(S3) private(B01, B11)
+			{
+				ufunc::addition::OmpVanilla<T>::re_operate(*S3, *B01, *B11); 
+			}
+			#pragma omp task shared(S4) private(B10, B00)
+			{
+				ufunc::addition::OmpVanilla<T>::re_operate(*S4, *B10, *B00); 
+			}
+			#pragma omp task shared(S5) private(A00, A01)
+			{
+				ufunc::addition::OmpVanilla<T>::operate(*S5, *A00, *A01); 
+			}
+			#pragma omp task shared(S6) private(A10, A00)
+			{
+				ufunc::addition::OmpVanilla<T>::re_operate(*S6, *A10, *A00); 
+			}
+			#pragma omp task shared(S7) private(B00, B01)
+			{
+				ufunc::addition::OmpVanilla<T>::operate(*S7, *B00, *B01);
+			}
+			#pragma omp task shared(S8) private(A01, A11)
+			{
+				ufunc::addition::OmpVanilla<T>::re_operate(*S8, *A01, *A11);
+			}
+			#pragma omp task shared(S9) private(B10, B11)
+			{
+				ufunc::addition::OmpVanilla<T>::operate(*S9, *B10, *B11); 
+			}
+		}
+		SplittableMatrix<T>* M[7];
+		for (int i = 0; i < 7; i++) 
+		{
+			M[i] = new SplittableMatrix<T>(new Buffer<T>(hsize), hsize);
+		}
+		
+		Strassen_distributed(*M[0], *S0, *S1, depth +1);
+
+		Strassen_distributed(*M[1], *S2, *B00, depth +1);
+
+		Strassen_distributed(*M[2], *A00, *S3, depth +1);
+
+		Strassen_distributed(*M[3], *A11, *S4, depth +1);
+
+		Strassen_distributed(*M[4], *S5, *B11, depth +1);
+
+		Strassen_distributed(*M[5], *S6, *S7, depth +1);
+
+		Strassen_distributed(*M[6], *S8, *S9, depth +1);
+
+		delete A00; delete A01; delete A10; delete A11;
+		delete B00; delete B01; delete B10; delete B11;
+		delete S0; delete S1; delete S2; delete S3; delete S4;
+		delete S5; delete S6; delete S7; delete S8; delete S9;
+		
+		
+		#pragma omp taskgroup
+		{
+			#pragma omp task
+			{
+				ufunc::addition::Seq<T>::operate(*M[6], *M[6], *M[0]);
+		
+				ufunc::addition::Seq<T>::operate(*M[6], *M[6], *M[3]);
+
+				ufunc::addition::Seq<T>::re_operate(*C.split(0, 0), *M[6], *M[4]);
+			}
+			#pragma omp task
+			{
+				ufunc::addition::Seq<T>::operate(*C.split(0, 1), *M[2], *M[4]);
+			}
+			#pragma omp task
+			{
+				ufunc::addition::Seq<T>::operate(*C.split(1, 0), *M[1], *M[3]);
+			}
+			#pragma omp task
+			{
+				ufunc::addition::Seq<T>::operate(*M[5], *M[5], *M[0]);
+
+				ufunc::addition::Seq<T>::re_operate(*M[5], *M[5], *M[1]);
+
+				ufunc::addition::Seq<T>::operate(*C.split(1, 1), *M[5], *M[2]);
+			}
+		}
+
+		// Clean up
+		
+
+		for (int i = 0; i < 7; i++) {
+			delete M[i];
+		}
+	}
+};
+template <typename T>
+std::atomic<bool> HybridStrassen<T>::g_stop{false};
+
+template <typename T>
+size_t HybridStrassen<T>::threshold = -1;
+
+template<class T>
+class MPIStrassen {
+public:
+	static inline void operate(SplittableMatrix<T>& out, const SplittableMatrix<T>& lhs, const SplittableMatrix<T>& rhs) 
+	{
+		int rank, nprocs; 
+    	MPI_Comm_rank(MPI_COMM_WORLD,&rank); 
+    	MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
+		MPI_Barrier(MPI_COMM_WORLD);
+		if (rank == 0)
+		{
+
+			std::thread scheduler_thread(scheduler_loop, nprocs );
+
+			StrassenRecursive(out, lhs,  rhs, 0);
+
+			for (int i = 1; i < nprocs; ++i) 
+				MPI_Send(NULL,0,MPI_BYTE,i,TAG_STOP,MPI_COMM_WORLD);
+			g_stop.store(true);
+
+			scheduler_thread.join();
+
+		}
+		else 
+		{
+			worker_loop(rank);
+		}
+	}
+
+	static void set_threshold(size_t _threshold) 
+	{
+		threshold = _threshold;
+	}
+
+protected:
+	static size_t threshold;
+	SplittableMatrix<T>* out;
+	const SplittableMatrix<T>* lhs;
+	const SplittableMatrix<T>* rhs;
+
+	static std::atomic<bool> g_stop;
+
+	enum {
+		TAG_TASK = 100, TAG_RESULT = 101, TAG_STOP = 102,
+		TAG_REQ_WORKER = 103, TAG_ASSIGN = 104, TAG_WORKER_FREE = 105
+	};
+
+	struct task
+	{
+		int size;
+		int caller;
+		int depth;
+	};
+
+	MPIStrassen(SplittableMatrix<T>* out, const SplittableMatrix<T>* lhs, const SplittableMatrix<T>* rhs)
+		: out(out), lhs(lhs), rhs(rhs) {}
+
+	static void worker_loop(int myRank)
+	{
+		while (true)
+		{
+			int flag = 0;
+			MPI_Status st;
+			MPI_Iprobe(0, TAG_STOP, MPI_COMM_WORLD, &flag, &st);
+			if (flag)
+			{
+				MPI_Recv(NULL, 0, MPI_BYTE, 0, TAG_STOP, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+				break;
+			}
+			
+			MPI_Iprobe(MPI_ANY_SOURCE, TAG_TASK, MPI_COMM_WORLD, &flag, &st);
+			if (!flag)
+			{
+				continue; 
+			}
+
+			task h;
+			MPI_Recv(&h, 3, MPI_INT, st.MPI_SOURCE, TAG_TASK, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+			int n = h.size;
+
+			SplittableMatrix<T> *A = new SplittableMatrix<T>(new Buffer<T>(n, n), n, n);
+			SplittableMatrix<T> *B = new SplittableMatrix<T>(new Buffer<T>(n, n), n, n);
+
+			MPI_Recv(A->root->data, n*n, sizeof(T) == 4 ? MPI_FLOAT : MPI_DOUBLE, st.MPI_SOURCE, TAG_TASK, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+			MPI_Recv(B->root->data, n*n, sizeof(T) == 4 ? MPI_FLOAT : MPI_DOUBLE, st.MPI_SOURCE, TAG_TASK, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+			StrassenRecursive(*A, *A, *B, h.depth);
+
+			MPI_Send(&h, 3, MPI_INT, h.caller, TAG_RESULT, MPI_COMM_WORLD);
+			MPI_Send(A->root->data, n*n, sizeof(T) == 4 ? MPI_FLOAT : MPI_DOUBLE, h.caller, TAG_RESULT, MPI_COMM_WORLD);
+			MPI_Send(&myRank, 1, MPI_INT, 0, TAG_WORKER_FREE, MPI_COMM_WORLD);
+
+		}
+	}
+
+	static int request_worker(int depth) 
+	{
+		MPI_Send(&depth, 1, MPI_INT, 0, TAG_REQ_WORKER, MPI_COMM_WORLD);
+		int worker; 
+		MPI_Recv(&worker, 1, MPI_INT, 0, TAG_ASSIGN, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+		return worker; 
+	}
+
+	static void send_data(SplittableMatrix<T>& a, SplittableMatrix<T>& b, int n, int depth, int worker, SplittableMatrix<T>& res)
+	{
+		task h {
+			.size = n,
+			.depth = depth
+		};
+		MPI_Comm_rank(MPI_COMM_WORLD, &h.caller);
+
+		MPI_Send(&h, 3, MPI_INT, worker, TAG_TASK, MPI_COMM_WORLD);
+
+		MPI_Send(a.root->data, n*n, sizeof(T) == 4 ? MPI_FLOAT : MPI_DOUBLE, worker, TAG_TASK, MPI_COMM_WORLD);
+		MPI_Send(b.root->data, n*n, sizeof(T) == 4 ? MPI_FLOAT : MPI_DOUBLE, worker, TAG_TASK, MPI_COMM_WORLD);
+		
+		// nhận kết quả
+		task rh;
+		MPI_Recv(&rh, 3, MPI_INT, worker, TAG_RESULT, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+		MPI_Recv(res.root->data, rh.size*rh.size, sizeof(T) == 4 ? MPI_FLOAT : MPI_DOUBLE, worker, TAG_RESULT, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+		
+	}
+
+	static inline void scheduler_loop(int nprocs)
+	{
+		std::queue<int> free_workers;
+		for (int w = 1; w < nprocs; ++w) 
+			free_workers.push(w);
+
+		MPI_Status st;
+
+		while (!g_stop)
+		{
+			int flag = 0;
+			MPI_Iprobe(MPI_ANY_SOURCE, TAG_REQ_WORKER, MPI_COMM_WORLD, &flag, &st);
+			if (flag)
+			{
+				int req_depth;
+				MPI_Recv(&req_depth, 1, MPI_INT, st.MPI_SOURCE, TAG_REQ_WORKER, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+				int assigned = -1;
+				if (!free_workers.empty())
+				{
+					assigned = free_workers.front();
+					free_workers.pop();
+				}
+				MPI_Send(&assigned, 1, MPI_INT, st.MPI_SOURCE, TAG_ASSIGN, MPI_COMM_WORLD);
+				continue;
+			}
+
+			MPI_Iprobe(MPI_ANY_SOURCE, TAG_WORKER_FREE, MPI_COMM_WORLD, &flag, &st);
+			if (flag)
+			{
+				int wid;
+				MPI_Recv(&wid, 1, MPI_INT, st.MPI_SOURCE, TAG_WORKER_FREE, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+				free_workers.push(wid);
+				continue;
+			}
+
+			std::this_thread::sleep_for(std::chrono::milliseconds(1));
+
+		}
+
+	}
+
+	static void Strassen_distributed(SplittableMatrix<T>& C, SplittableMatrix<T>& A, SplittableMatrix<T>& B, int depth)
+	{
+		int w = request_worker(depth);
+		if (w == -1)
+		{
+			StrassenRecursive(C, A, B, depth + 1);
+			return;
+		}
+		else 
+		{
+			int out_id = -1;
+			send_data(A, B, A.cdim, depth, w, C);
+		}
+	}
+
+		
+	static void StrassenRecursive(SplittableMatrix<T>& C, const SplittableMatrix<T>& A, const SplittableMatrix<T>& B, int depth) 
+	{
+        // const size_t N = std::max(C.rdim, C.cdim);
+		const size_t N = C.cdim;
+        if (N <= threshold) 
+		{
+			CODE_FOR_DEBUG_MODE(printf("Rank %d: depth %d, size %zu handled locally\n", get_mpi_rank(), depth, N);)
+            Seq<T>::operate(C, A, B);
+            return;
+        }
+
+		size_t hsize = N / 2;
+		size_t rem_size = N - hsize;
+
+        // split A, B, C into 4 submatrices using SplittableMatrix::split or view()
+        SplittableMatrix<T>* A00 = A.split(0, 0);
+		SplittableMatrix<T>* A01 = A.split(0, 1);
+		SplittableMatrix<T>* A10 = A.split(1, 0);
+		SplittableMatrix<T>* A11 = A.split(1, 1);
+		SplittableMatrix<T>* B00 = B.split(0, 0);
+		SplittableMatrix<T>* B01 = B.split(0, 1);
+		SplittableMatrix<T>* B10 = B.split(1, 0);
+		SplittableMatrix<T>* B11 = B.split(1, 1);
+
+		SplittableMatrix<T>* S0 = new SplittableMatrix<T>(new Buffer<T>(hsize), hsize);
+		ufunc::addition::Seq<T>::operate(*S0, *A00, *A11); // S0 = A00 + A11
+		
+		SplittableMatrix<T>* S1 = new SplittableMatrix<T>(new Buffer<T>(hsize), hsize);
+		ufunc::addition::Seq<T>::operate(*S1, *B00, *B11); // S1 = B00 + B11
+		
+		SplittableMatrix<T>* S2 = new SplittableMatrix<T>(new Buffer<T>(hsize), hsize);
+		ufunc::addition::Seq<T>::operate(*S2, *A10, *A11); 
+
+		SplittableMatrix<T>* S3 = new SplittableMatrix<T>(new Buffer<T>(hsize), hsize);
+		ufunc::addition::Seq<T>::re_operate(*S3, *B01, *B11); 
+
+		SplittableMatrix<T>* S4 = new SplittableMatrix<T>(new Buffer<T>(hsize), hsize);
+		ufunc::addition::Seq<T>::re_operate(*S4, *B10, *B00); 
+
+		SplittableMatrix<T>* S5 = new SplittableMatrix<T>(new Buffer<T>(hsize), hsize);
+		ufunc::addition::Seq<T>::operate(*S5, *A00, *A01); 
+
+		SplittableMatrix<T>* S6 = new SplittableMatrix<T>(new Buffer<T>(hsize), hsize);
+		ufunc::addition::Seq<T>::re_operate(*S6, *A10, *A00); 
+
+		SplittableMatrix<T>* S7 = new SplittableMatrix<T>(new Buffer<T>(hsize), hsize);
+		ufunc::addition::Seq<T>::operate(*S7, *B00, *B01);
+		
+		SplittableMatrix<T>* S8 = new SplittableMatrix<T>(new Buffer<T>(hsize), hsize);
+		ufunc::addition::Seq<T>::re_operate(*S8, *A01, *A11);
+		
+		SplittableMatrix<T>* S9 = new SplittableMatrix<T>(new Buffer<T>(hsize), hsize);
+		ufunc::addition::Seq<T>::operate(*S9, *B10, *B11); 
+
+		SplittableMatrix<T>* M[7];
+		for (int i = 0; i < 7; i++) 
+		{
+			M[i] = new SplittableMatrix<T>(new Buffer<T>(hsize), hsize);
+		}
+		
+		Strassen_distributed(*M[0], *S0, *S1, depth +1);
+
+		Strassen_distributed(*M[1], *S2, *B00, depth +1);
+
+		Strassen_distributed(*M[2], *A00, *S3, depth +1);
+
+		Strassen_distributed(*M[3], *A11, *S4, depth +1);
+
+		Strassen_distributed(*M[4], *S5, *B11, depth +1);
+
+		Strassen_distributed(*M[5], *S6, *S7, depth +1);
+
+		Strassen_distributed(*M[6], *S8, *S9, depth +1);
+
+		delete A00; delete A01; delete A10; delete A11;
+		delete B00; delete B01; delete B10; delete B11;
+		delete S0; delete S1; delete S2; delete S3; delete S4;
+		delete S5; delete S6; delete S7; delete S8; delete S9;
+		
+		
+		ufunc::addition::Seq<T>::operate(*M[6], *M[6], *M[0]);
+		
+		ufunc::addition::Seq<T>::operate(*M[6], *M[6], *M[3]);
+
+		ufunc::addition::Seq<T>::re_operate(*C.split(0, 0), *M[6], *M[4]);
+
+		ufunc::addition::Seq<T>::operate(*C.split(0, 1), *M[2], *M[4]);
+
+		ufunc::addition::Seq<T>::operate(*C.split(1, 0), *M[1], *M[3]);
+
+		ufunc::addition::Seq<T>::operate(*M[5], *M[5], *M[0]);
+
+		ufunc::addition::Seq<T>::re_operate(*M[5], *M[5], *M[1]);
+
+		ufunc::addition::Seq<T>::operate(*C.split(1, 1), *M[5], *M[2]);
+
+		// Clean up
+		
+
+		for (int i = 0; i < 7; i++) {
+			delete M[i];
+		}
+	}
+};
+template <typename T>
+std::atomic<bool> MPIStrassen<T>::g_stop{false};
+
+template <typename T>
+size_t MPIStrassen<T>::threshold = -1;
+
 #endif // USE_MPI
 
 
 }; // namespace matmul
 }; // namespace ufunc
 
-#endif // MATRIX_UFUNC_MATMUL_H
+// #endif // MATRIX_UFUNC_MATMUL_H
