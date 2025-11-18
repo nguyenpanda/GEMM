@@ -1,4 +1,4 @@
-CXX			:= g++
+CXX			:= clang++
 EXECUTE		:= 
 MPI_NP		:= 1
 HOSTFILE	:=
