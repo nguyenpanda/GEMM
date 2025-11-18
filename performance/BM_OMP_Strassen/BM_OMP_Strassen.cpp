@@ -24,9 +24,6 @@ void MAIN_INIT(int argc, char** argv) {
 }
 
 #define THRESHOLD_LIST \
-    X(2)               \
-    X(4)               \
-    X(8)               \
     X(16)              \
     X(32)              \
     X(64)              \
