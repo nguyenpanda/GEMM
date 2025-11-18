@@ -15,9 +15,9 @@ MACRO += -DDEBUG_MODE
 # MPI_INCLUDE = -I/usr/lib/x86_64-linux-gnu/openmpi/include -I/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi
 # MPI_LIBS = -L/usr/lib/x86_64-linux-gnu/openmpi/lib -lmpi_cxx -lmpi
 
-# Add MPI includes and libs
-EXTRA_CXXFLAGS += $(MPI_INCLUDE)
-LDFLAGS += $(MPI_LIBS)
+# # Add MPI includes and libs
+# EXTRA_CXXFLAGS += $(MPI_INCLUDE)
+# LDFLAGS += $(MPI_LIBS)
 
 # Disable Auto-Vectorize
 # EXTRA_CXXFLAGS += -fno-vectorize -fno-slp-vectorize
