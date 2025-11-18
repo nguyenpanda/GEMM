@@ -267,7 +267,7 @@ public:
 	{
 		#pragma omp parallel
 		#pragma omp single
-		StrassenRecursive(out, lhs, rhs, 0);
+		StrassenRecursive(out, lhs, rhs);
 	}
 
 	static void set_threshold(size_t _threshold) 
@@ -285,7 +285,7 @@ protected:
 	OmpStrassen(SplittableMatrix<T>* out, const SplittableMatrix<T>* lhs, const SplittableMatrix<T>* rhs)
 		: out(out), lhs(lhs), rhs(rhs) {}
 	
-	static void StrassenRecursive(SplittableMatrix<T>& C, const SplittableMatrix<T>& A, const SplittableMatrix<T>& B, int depth) 
+	static void StrassenRecursive(SplittableMatrix<T>& C, const SplittableMatrix<T>& A, const SplittableMatrix<T>& B) 
 	{
         // const size_t N = std::max(C.rdim, C.cdim);
 		const size_t N = C.cdim;
@@ -307,129 +307,72 @@ protected:
 		SplittableMatrix<T>* B01 = B.split(0, 1);
 		SplittableMatrix<T>* B10 = B.split(1, 0);
 		SplittableMatrix<T>* B11 = B.split(1, 1);
+		SplittableMatrix<T>* C00 = C.split(0, 0);
+		SplittableMatrix<T>* C01 = C.split(0, 1);
+		SplittableMatrix<T>* C10 = C.split(1, 0);
+		SplittableMatrix<T>* C11 = C.split(1, 1);
 
-		SplittableMatrix<T>* S0 = new SplittableMatrix<T>(new Buffer<T>(hsize), hsize);
-		SplittableMatrix<T>* S1 = new SplittableMatrix<T>(new Buffer<T>(hsize), hsize);
-		SplittableMatrix<T>* S2 = new SplittableMatrix<T>(new Buffer<T>(hsize), hsize);
-		SplittableMatrix<T>* S3 = new SplittableMatrix<T>(new Buffer<T>(hsize), hsize);
-		SplittableMatrix<T>* S4 = new SplittableMatrix<T>(new Buffer<T>(hsize), hsize);
-		SplittableMatrix<T>* S5 = new SplittableMatrix<T>(new Buffer<T>(hsize), hsize);
-		SplittableMatrix<T>* S6 = new SplittableMatrix<T>(new Buffer<T>(hsize), hsize);
-		SplittableMatrix<T>* S7 = new SplittableMatrix<T>(new Buffer<T>(hsize), hsize);
-		SplittableMatrix<T>* S8 = new SplittableMatrix<T>(new Buffer<T>(hsize), hsize);
-		SplittableMatrix<T>* S9 = new SplittableMatrix<T>(new Buffer<T>(hsize), hsize);
+		SplittableMatrix<T>* Temp1 = new SplittableMatrix<T>(new Buffer<T>(hsize), hsize);
+		SplittableMatrix<T>* Temp2 = new SplittableMatrix<T>(new Buffer<T>(hsize), hsize);
+		SplittableMatrix<T>* res = new SplittableMatrix<T>(new Buffer<T>(hsize), hsize);
 
-		#pragma omp taskgroup
-		{
-			#pragma omp task shared(S0) private(A00, A11)
-			{
-				ufunc::addition::OmpVanilla<T>::operate(*S0, *A00, *A11); // S0 = A00 + A11
-			}
-			#pragma omp task shared(S1) private(B00, B11)
-			{
-				ufunc::addition::OmpVanilla<T>::operate(*S1, *B00, *B11); // S1 = B00 + B11
-			}
-			#pragma omp task shared(S2) private(A10, A11)
-			{
-				ufunc::addition::OmpVanilla<T>::operate(*S2, *A10, *A11); 
-			}
-			#pragma omp task shared(S3) private(B01, B11)
-			{
-				ufunc::addition::OmpVanilla<T>::re_operate(*S3, *B01, *B11); 
-			}
-			#pragma omp task shared(S4) private(B10, B00)
-			{
-				ufunc::addition::OmpVanilla<T>::re_operate(*S4, *B10, *B00); 
-			}
-			#pragma omp task shared(S5) private(A00, A01)
-			{
-				ufunc::addition::OmpVanilla<T>::operate(*S5, *A00, *A01); 
-			}
-			#pragma omp task shared(S6) private(A10, A00)
-			{
-				ufunc::addition::OmpVanilla<T>::re_operate(*S6, *A10, *A00); 
-			}
-			#pragma omp task shared(S7) private(B00, B01)
-			{
-				ufunc::addition::OmpVanilla<T>::operate(*S7, *B00, *B01);
-			}
-			#pragma omp task shared(S8) private(A01, A11)
-			{
-				ufunc::addition::OmpVanilla<T>::re_operate(*S8, *A01, *A11);
-			}
-			#pragma omp task shared(S9) private(B10, B11)
-			{
-				ufunc::addition::OmpVanilla<T>::operate(*S9, *B10, *B11); 
-			}
-		}
-		#pragma omp taskwait
-		SplittableMatrix<T>* M[7];
-		for (int i = 0; i < 7; i++) 
-		{
-			M[i] = new SplittableMatrix<T>(new Buffer<T>(hsize), hsize);
-		}
-		
         #pragma omp taskgroup
 		{
-			#pragma omp task firstprivate(depth) shared(M) 
-			{
-				StrassenRecursive(*M[0], *S0, *S1, depth +1);
+			#pragma omp task 
+			{	
+				ufunc::addition::Seq<T>::operate(*Temp1, *A00, *A11);
+				ufunc::addition::Seq<T>::operate(*Temp1, *B00, *B11);
+				StrassenRecursive(*res, *Temp1, *Temp2);
+				ufunc::addition::Seq<T>::operate(*C00, *C00, *res);
+				ufunc::addition::Seq<T>::operate(*C11, *C11, *res);
 			}
-			#pragma omp task firstprivate(depth) shared(M) 
+			#pragma omp task 
 			{
-				StrassenRecursive(*M[1], *S2, *B00, depth +1);
+				ufunc::addition::Seq<T>::operate(*Temp1, *A10, *A11);
+				StrassenRecursive(*res, *Temp1, *B00);
+				ufunc::addition::Seq<T>::operate(*C10, *C10, *res);
+				ufunc::addition::Seq<T>::re_operate(*C11, *C11, *res);
 			}
-			#pragma omp task firstprivate(depth) shared(M)
+			#pragma omp task 
 			{
-				StrassenRecursive(*M[2], *A00, *S3, depth +1);
+				ufunc::addition::Seq<T>::re_operate(*Temp1, *B01, *B11);
+				StrassenRecursive(*res, *A00, *Temp1);
+				ufunc::addition::Seq<T>::operate(*C01, *C01, *res);
+				ufunc::addition::Seq<T>::re_operate(*C11, *C11, *res);
 			}
-			#pragma omp task firstprivate(depth) shared(M) 
+			#pragma omp task 
 			{
-				StrassenRecursive(*M[3], *A11, *S4, depth +1);
+				ufunc::addition::Seq<T>::re_operate(*Temp1, *B10, *B00);
+				StrassenRecursive(*res, *A11, *Temp1);
+				ufunc::addition::Seq<T>::operate(*C00, *C00, *res);
+				ufunc::addition::Seq<T>::operate(*C10, *C10, *res);
 			}
-			#pragma omp task firstprivate(depth) shared(M) 
+			#pragma omp task 
 			{
-				StrassenRecursive(*M[4], *S5, *B11, depth +1);
+				ufunc::addition::Seq<T>::re_operate(*Temp1, *A00, *A01);
+				StrassenRecursive(*res, *Temp1, *B11);
+				ufunc::addition::Seq<T>::re_operate(*C00, *C00, *res);
+				ufunc::addition::Seq<T>::operate(*C01, *C01, *res);
 			}
-			#pragma omp task firstprivate(depth) shared(M)
+			#pragma omp task 
 			{
-				StrassenRecursive(*M[5], *S6, *S7, depth +1);
+				ufunc::addition::Seq<T>::re_operate(*Temp1, *A10, *A00);
+				ufunc::addition::Seq<T>::operate(*Temp2, *B00, *B01);
+				StrassenRecursive(*res, *Temp1, *Temp2);
+				ufunc::addition::Seq<T>::operate(*C11, *C11, *res);
 			}
-			#pragma omp task firstprivate(depth) shared(M) 
+			#pragma omp task
 			{
-				StrassenRecursive(*M[6], *S8, *S9, depth +1);
+				ufunc::addition::Seq<T>::re_operate(*Temp1, *A10, *A00);
+				ufunc::addition::Seq<T>::operate(*Temp2, *B00, *B01);
+				StrassenRecursive(*res, *Temp1, *Temp2);
+				ufunc::addition::Seq<T>::operate(*C00, *C00, *res);
 			}
 		}
 
 		delete A00; delete A01; delete A10; delete A11;
 		delete B00; delete B01; delete B10; delete B11;
-		delete S0; delete S1; delete S2; delete S3; delete S4;
-		delete S5; delete S6; delete S7; delete S8; delete S9;
-		
-		
-		ufunc::addition::OmpVanilla<T>::operate(*M[6], *M[6], *M[0]);
-		#pragma omp taskwait
-		ufunc::addition::OmpVanilla<T>::operate(*M[6], *M[6], *M[3]);
-		#pragma omp taskwait
-		#pragma taskgroup
-		{
-			ufunc::addition::OmpVanilla<T>::re_operate(*C.split(0, 0), *M[6], *M[4]);
-
-			ufunc::addition::OmpVanilla<T>::operate(*C.split(0, 1), *M[2], *M[4]);
-
-
-			ufunc::addition::OmpVanilla<T>::operate(*C.split(1, 0), *M[1], *M[3]);
-
-			ufunc::addition::OmpVanilla<T>::operate(*M[5], *M[5], *M[0]);
-		}
-
-		ufunc::addition::OmpVanilla<T>::re_operate(*M[5], *M[5], *M[1]);
-		#pragma omp taskwait
-		ufunc::addition::OmpVanilla<T>::operate(*C.split(1, 1), *M[5], *M[2]);
-		#pragma omp taskwait
-
-		// Clean up
-		
+		delete Temp1; delete Temp2; delete res;
 
 		for (int i = 0; i < 7; i++) {
 			delete M[i];
