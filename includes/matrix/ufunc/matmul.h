@@ -296,73 +296,85 @@ protected:
         }
 
 		size_t hsize = N / 2;
+		size_t rem_size = N - hsize;
 
-		SplittableMatrix<T>* Temp1 = new SplittableMatrix<T>(new Buffer<T>(hsize), hsize);
-		SplittableMatrix<T>* Temp2 = new SplittableMatrix<T>(new Buffer<T>(hsize), hsize);
-		SplittableMatrix<T>* res = new SplittableMatrix<T>(new Buffer<T>(hsize), hsize);
+        // split A, B, C into 4 submatrices using SplittableMatrix::split or view()
+		SplittableMatrix<T> M1(new Buffer<T>(hsize), hsize);
+    	SplittableMatrix<T> M2(new Buffer<T>(hsize), hsize);
+    	SplittableMatrix<T> M3(new Buffer<T>(hsize), hsize);
 		SplittableMatrix<T>* C00 = C.split(0, 0);
 		SplittableMatrix<T>* C01 = C.split(0, 1);
 		SplittableMatrix<T>* C10 = C.split(1, 0);
 		SplittableMatrix<T>* C11 = C.split(1, 1);
 
-        #pragma omp taskgroup task_reduction(+: C00, C01, C10, C11)
+        #pragma omp taskgroup
 		{
-			#pragma omp task in_reduction(+:C00, C11)
+			#pragma omp task 
 			{	
-				ufunc::addition::Seq<T>::operate(*Temp1, *A.split(0, 0), *A.split(1, 1));
-				ufunc::addition::Seq<T>::operate(*Temp1, *B.split(0, 0), *B.split(1, 1));
-				StrassenRecursive(*res, *Temp1, *Temp2);
-				ufunc::addition::Seq<T>::operate(*C00, *C00, *res);
-				ufunc::addition::Seq<T>::operate(*C11, *C11, *res);
+				SplittableMatrix<T> Temp1(new Buffer<T>(hsize), hsize);
+                SplittableMatrix<T> Temp2(new Buffer<T>(hsize), hsize);
+				ufunc::addition::Seq<T>::operate(*Temp1, *A.split(0,0), *A.split(1,1));
+				ufunc::addition::Seq<T>::operate(*Temp1, *B.split(0,0), *B.spilt(1,1));
+				StrassenRecursive(M1, *Temp1, *Temp2);
 			}
-			#pragma omp task in_reduction(+:C10, C11)
+			#pragma omp task 
 			{
-				ufunc::addition::Seq<T>::operate(*Temp1, *A.split(1, 0), *A.split(1, 1));
-				StrassenRecursive(*res, *Temp1, *B.split(0, 0));
-				ufunc::addition::Seq<T>::operate(*C10, *C10, *res);
-				ufunc::addition::Seq<T>::re_operate(*C11, *C11, *res);
+				SplittableMatrix<T> Temp1(new Buffer<T>(hsize), hsize);
+				ufunc::addition::Seq<T>::operate(*Temp1, *A.split(1,0), *A.split(1,1));
+				StrassenRecursive(*M2, *Temp1, *B.split(0,0));
 			}
-			#pragma omp task in_reduction(+:C01, C11)
+			#pragma omp task 
 			{
-				ufunc::addition::Seq<T>::re_operate(*Temp1, *B.split(0, 1), *B.split(1, 1));
-				StrassenRecursive(*res, *A.split(0, 0), *Temp1);
-				ufunc::addition::Seq<T>::operate(*C01, *C01, *res);
-				ufunc::addition::Seq<T>::re_operate(*C11, *C11, *res);
+				SplittableMatrix<T> Temp1(new Buffer<T>(hsize), hsize);
+				ufunc::addition::Seq<T>::re_operate(*Temp1, *B.spilt(0,1), *B.split(1,1));
+				StrassenRecursive(*M3, *A.split(0,0), *Temp1);
 			}
-			#pragma omp task in_reduction(+:C00, C10)
+			#pragma omp task 
 			{
-				ufunc::addition::Seq<T>::re_operate(*Temp1, *B.split(1, 0), *B.split(0, 0));
-				StrassenRecursive(*res, *A.split(1, 1), *Temp1);
-				ufunc::addition::Seq<T>::operate(*C00, *C00, *res);
-				ufunc::addition::Seq<T>::operate(*C10, *C10, *res);
+				// M4
+				SplittableMatrix<T> Temp1(new Buffer<T>(hsize), hsize);
+				ufunc::addition::Seq<T>::re_operate(*Temp1, *B.split(1,0), *B.split(0,0));
+				StrassenRecursive(*C10, *A.split(1,1), *Temp1);
 			}
-			#pragma omp task in_reduction(+:C00, C01)
+			#pragma omp task 
 			{
-				ufunc::addition::Seq<T>::re_operate(*Temp1, *A.split(0, 0), *A.split(0, 1));
-				StrassenRecursive(*res, *Temp1, *B.split(1, 1));
-				ufunc::addition::Seq<T>::re_operate(*C00, *C00, *res);
-				ufunc::addition::Seq<T>::operate(*C01, *C01, *res);
+				// M5
+				SplittableMatrix<T> Temp1(new Buffer<T>(hsize), hsize);
+				ufunc::addition::Seq<T>::re_operate(*Temp1, *A.split(0,0), *A.split(0,1));
+				StrassenRecursive(*C01, *Temp1, *B.split(1,1));
 			}
-			#pragma omp task in_reduction(+:C11)
+			#pragma omp task 
 			{
-				ufunc::addition::Seq<T>::re_operate(*Temp1, *A.split(1, 0), *A.split(0, 0));
-				ufunc::addition::Seq<T>::operate(*Temp2, *B.split(0, 0), *B.split(0, 1));
-				StrassenRecursive(*res, *Temp1, *Temp2);
-				ufunc::addition::Seq<T>::operate(*C11, *C11, *res);
+				SplittableMatrix<T> Temp1(new Buffer<T>(hsize), hsize);
+				SplittableMatrix<T> Temp2(new Buffer<T>(hsize), hsize);
+				ufunc::addition::Seq<T>::re_operate(*Temp1, *A.split(1,0), *A.split(0,0));
+				ufunc::addition::Seq<T>::operate(*Temp2, *B.split(0,0), *B.split(0,1));
+				StrassenRecursive(*C11, *Temp1, *Temp2);
 			}
-			#pragma omp task in_reduction(+:C00)
+			#pragma omp task
 			{
-				ufunc::addition::Seq<T>::re_operate(*Temp1, *A.split(1, 0), *A.split(0, 0));
-				ufunc::addition::Seq<T>::operate(*Temp2, *B.split(0, 0), *B.split(0, 1));
-				StrassenRecursive(*res, *Temp1, *Temp2);
-				ufunc::addition::Seq<T>::operate(*C00, *C00, *res);
+				SplittableMatrix<T> Temp1(new Buffer<T>(hsize), hsize);
+				SplittableMatrix<T> Temp2(new Buffer<T>(hsize), hsize);
+				ufunc::addition::Seq<T>::re_operate(*Temp1, *A.split(0,1), *A.split(1,1));
+				ufunc::addition::Seq<T>::operate(*Temp2, *B.split(1,0), *B.split(1,1));
+				StrassenRecursive(*C00, *Temp1, *Temp2);
 			}
 		}
+		
+		ufunc::addition::Seq<T>::operate(*C00, *C00, *C10);
+		ufunc::addition::Seq<T>::re_operate(*C00, *C00, *C01);
+		ufunc::addition::Seq<T>::operate(*C00, *C00, M1);
 
-		delete A00; delete A01; delete A10; delete A11;
-		delete B00; delete B01; delete B10; delete B11;
-		delete Temp1; delete Temp2; delete res;
+		ufunc::addition::Seq<T>::operate(*C11, *C11, M1);
+		delete M1.root;
+		ufunc::addition::Seq<T>::re_operate(*C11, *C11, M2);
+		ufunc::addition::Seq<T>::operate(*C11, *C11, M3);
 
+		ufunc::addition::Seq<T>::operate(*C10, *C11, M2);
+		delete M2.root;
+
+		ufunc::addition::Seq<T>::operate(*C01, *C01, M3);
+		delete M3.root;
 
 	}
 };
