@@ -2,6 +2,7 @@
 
 .venv
 myenv310
+myenv
 __pycache__
 
 .vscode
