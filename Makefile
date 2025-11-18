@@ -1,4 +1,4 @@
-CXX			:= g++
+CXX			:= clang++
 EXECUTABLE	:= main.exe
 
 # Makefile
