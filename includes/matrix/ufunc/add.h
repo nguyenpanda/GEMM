@@ -27,6 +27,18 @@ public:
 			}
 		}
 	}
+
+	static inline void re_operate(SplittableMatrix<T>& out, const SplittableMatrix<T>& lhs, const SplittableMatrix<T>& rhs)  {
+		for (size_t i = 0; i < out.rdim; i++) {
+			#pragma omp simd
+			for (size_t j = 0; j < out.cdim; j++) {
+				size_t out_idx = out.map2Dto1DIndex(i, j);
+				size_t lhs_idx = lhs.map2Dto1DIndex(i, j);
+				size_t rhs_idx = rhs.map2Dto1DIndex(i, j);
+				out.root->data[out_idx] = lhs.root->data[lhs_idx] - rhs.root->data[rhs_idx];
+			}
+		}
+	}
 };
 
 
@@ -105,7 +117,7 @@ protected:
 
 		OmpForkJoin<T>* tasks[4];
 
-		#pragma omp unroll full
+		#pragma omp unroll
 		for (int i = 0; i < 4; i++) {
 			// The following loop must iterate backward.
 			// This is because Nguyenpanda designed the ForkJoin model to execute tasks
@@ -117,7 +129,7 @@ protected:
 			);
 		}
 
-		#pragma omp unroll full
+		#pragma omp unroll
 		for (int i = 0; i < 4; ++i) {
 			CODE_FOR_DEBUG_MODE(std::string temp = format + std::to_string(3-i);)
 			#pragma omp task
@@ -128,7 +140,7 @@ protected:
 
 		#pragma omp taskwait
 
-		#pragma omp unroll full
+		#pragma omp unroll
 		for (int i = 0; i < 4; i++) {
 			delete tasks[i]->lhs;
 			delete tasks[i]->rhs;

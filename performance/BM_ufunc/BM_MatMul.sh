@@ -2,6 +2,8 @@ mkdir -p compile_flags
 
 rm -rf build
 make compile EXTRA_MACRO="-DMATMUL_ORDER=2" >> compile_flags/BM_MatMul.txt
+make execute EXECUTE=build/BM_MatMul.exe OMP_NUM_THREADS=2
+make execute EXECUTE=build/BM_MatMul.exe OMP_NUM_THREADS=3
 make execute EXECUTE=build/BM_MatMul.exe OMP_NUM_THREADS=4
 make execute EXECUTE=build/BM_MatMul.exe OMP_NUM_THREADS=5
 make execute EXECUTE=build/BM_MatMul.exe OMP_NUM_THREADS=6

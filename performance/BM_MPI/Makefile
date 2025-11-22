@@ -46,4 +46,4 @@ include ../Makefile
 # Override compile rule for baseline (no OpenMP)
 $(BUILD)/BM_MatMul_MPI_Baseline.exe: $(DIR)/BM_MatMul_MPI_Baseline.cpp $(ROOT)/performance/Makefile $(DIR)/Makefile
 	@echo -e "$(YELLOW)Compiling baseline WITHOUT OpenMP...$(RESET)"
-	$(CXX) $(WARNING) $(BASELINE_MACRO) -std=c++23 -O3 $(BASELINE_CXXFLAGS) $(MPI_INCLUDE) $(INCLUDES) -MMD -MP $< -o $@ -lbenchmark -lpthread $(MPI_LIBS)
+	$(CXX) $(WARNING) $(BASELINE_MACRO) -std=c++17 -O3 $(BASELINE_CXXFLAGS) $(MPI_INCLUDE) $(INCLUDES) -MMD -MP $< -o $@ -lbenchmark -lpthread $(MPI_LIBS)
