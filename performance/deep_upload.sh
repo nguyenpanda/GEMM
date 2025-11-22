@@ -2,7 +2,7 @@
 
 # RUN Init
 cd BM_initialize/
-#./BM_InitializeRandom.sh
+./BM_InitializeRandom.sh
 #./BM_Main.sh
 cd ..
 
@@ -26,5 +26,5 @@ cd ..
 
 # RUN OMP Strassen
 cd BM_OMP_Strassen/
-./BM_OMP_Strassen.sh
+# ./BM_OMP_Strassen.sh
 cd ..
