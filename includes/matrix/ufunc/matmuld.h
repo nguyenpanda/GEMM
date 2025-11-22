@@ -2,10 +2,6 @@
 #define MATRIX_UFUNC_MATMULD_H
 
 #include "../viewer.h"
-#include <mpi.h>
-#include <cmath>
-#include <vector>
-#include <algorithm>
 
 namespace ufunc {
 namespace matmuld {
@@ -308,7 +304,7 @@ protected:
 template<class T>
 class MPIGridForkJoin {
 public:
-	static const int THRESHOLD = 64;
+	static const int THRESHOLD = 32;
 
 	static void operate(SplittableMatrix<T>& out, const SplittableMatrix<T>& lhs, const SplittableMatrix<T>& rhs) {
 		int rank, size;
@@ -912,7 +908,7 @@ protected:
 	}
 };
 
-}; // namespace matmul
+}; // namespace matmuld
 }; // namespace ufunc
 
 #endif // MATRIX_UFUNC_MATMULD_H

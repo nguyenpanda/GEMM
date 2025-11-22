@@ -19,8 +19,8 @@ BASELINE_CXXFLAGS := $(filter-out -fopenmp,$(EXTRA_CXXFLAGS))
 BASELINE_LDFLAGS := $(filter-out -lomp,$(LDFLAGS))
 
 # MPI flags (detected from mpicxx --showme)
-MPI_INCLUDE = -I/usr/lib/x86_64-linux-gnu/openmpi/include -I/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi
-MPI_LIBS = -L/usr/lib/x86_64-linux-gnu/openmpi/lib -lmpi_cxx -lmpi
+MPI_INCLUDE = -I/usr/include/openmpi-x86_64
+MPI_LIBS = -L/usr/lib64/openmpi/lib -lmpi_cxx -lmpi
 
 # Add MPI includes and libs
 EXTRA_CXXFLAGS += $(MPI_INCLUDE)

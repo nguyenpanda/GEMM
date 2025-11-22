@@ -105,8 +105,8 @@ void MAIN_INIT(int argc, char** argv) {
             state.SetIterationTime(max_elapsed_second);                                      \
         }                                                                                    \
     }                                                                                        \
-    BENCHMARK_REGISTER_F(BinaryFixture, BM_MPI_Baseline)->BENCHMARK_APPLY();
+    BENCHMARK_REGISTER_F(BinaryFixture, BM_MPI_Baseline)->BENCHMARK_APPLY()
 
-BENCHMARK_MPI_BASELINE()
+BENCHMARK_MPI_BASELINE();
 
 CUSTOM_MPI_BENCHMARK_MAIN();

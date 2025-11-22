@@ -1,1 +1,2 @@
-t480 slots=4
+head-03 slots=8
+head-01 slots=8

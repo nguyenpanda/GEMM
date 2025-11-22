@@ -11,9 +11,6 @@
     #define omp_get_max_threads() 1
     #define omp_get_num_procs() 1
 	#define omp_get_thread_num() 0
-	void HATUONGNGUYEN_OPENMP_ZERO() {
-		return;
-	}
 #else
     #ifdef _OPENMP
         #include <omp.h>
@@ -21,6 +18,30 @@
         #error "OMP_ENABLE but _OPENMP is not defined. Add OpenMP flags to your compiler (e.g., -fopenmp)."
     #endif
 #endif // OMP_ENABLE == 0
+
+// OPENMPI
+#ifdef MPI_ENABLE
+#include <mpi.h>
+#include <omp.h>
+#include <cmath>
+#include <vector>
+#include <algorithm>
+#endif
+
+// CUDA
+#ifdef __NVCC__
+#define CUDA_ENABLE 1
+#include <cuda_runtime.h>
+
+#define CUDA_CHECK(err) { 																\
+	if (err != cudaSuccess) { 															\
+		printf("%s in %s at line %d \n", cudaGetErrorString(err), __FILE__, __LINE__); 	\
+		exit(EXIT_FAILURE);																\
+	}																					\
+}
+#else
+#define CUDA_ENABLE 0
+#endif // #ifndef CUDA_ENABLE
 
 // DEBUG MODE
 #ifndef DEBUG_MODE
@@ -30,6 +51,10 @@
 	#define CODE_FOR_DEBUG_MODE(...) __VA_ARGS__
 	#define COMPILER_MODE "DEBUG"
 #endif // ifndef DEBUG_MODE
+
+////////////////////////////////////
+////////    MATRIX SETUP    ////////
+////////////////////////////////////
 
 // MATRIX MULTIPLICATION ORDER
 #define MATMUL_IJK 1
@@ -51,5 +76,12 @@
 #else
     #define PRECISION_STATUS "ON"
 #endif // PRECISION_MODE == 0 || !defined(PRECISION_MODE)
+
+// MATRIX MULTIPLICATION ON CUDA
+#if CUDA_ENABLE == 1
+#ifndef CUDA_TILE_WIDTH
+#define CUDA_TILE_WIDTH 64
+#endif // #ifndef CUDA_TILE_WIDTH
+#endif // CUDA_ENABLE == 1
 
 #endif // _MATRIX__CORE_MACRO_H

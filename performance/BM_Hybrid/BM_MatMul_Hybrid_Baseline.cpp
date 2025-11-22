@@ -13,23 +13,61 @@ using namespace elementwise_SplittableMatrix_Distributed;
 #pragma clang diagnostic ignored "-Wunused-parameter"
 void MAIN_INIT(int argc, char** argv) {
 #pragma clang diagnostic pop
-    int rank;
+    int rank, size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+    // Get processor/node name for each rank
+    char processor_name[MPI_MAX_PROCESSOR_NAME];
+    int name_len;
+    MPI_Get_processor_name(processor_name, &name_len);
     
+    // Gather all processor names to rank 0
+    std::vector<char> all_names;
+    if (rank == 0) {
+        all_names.resize(size * MPI_MAX_PROCESSOR_NAME);
+    }
+    
+    MPI_Gather(processor_name, MPI_MAX_PROCESSOR_NAME, MPI_CHAR,
+               all_names.data(), MPI_MAX_PROCESSOR_NAME, MPI_CHAR,
+               0, MPI_COMM_WORLD);
+
     if (rank == 0) {
         printf(GREEN "==========================\n" RESET);
-        printf("MPI+OpenMP Hybrid Baseline Matrix Multiplication\n");
+        printf("MPI Baseline Matrix Multiplication (IKJ)\n");
         printf(GREEN "==========================\n" RESET);
-        
-        int size;
-        MPI_Comm_size(MPI_COMM_WORLD, &size);
+
         int num_threads = omp_get_max_threads();
+
         printf("MPI_COMM_SIZE = %d\n", size);
-        printf("Strategy: Row-wise distribution with OpenMP IKJ\n");
         printf("OMP_NUM_THREADS = %d\n", num_threads);
         
+        // Build hostname list
+        std::string hosts_str;
+        std::set<std::string> unique_hosts;
+        for (int i = 0; i < size; ++i) {
+            std::string host(&all_names[i * MPI_MAX_PROCESSOR_NAME]);
+            unique_hosts.insert(host);
+            if (i > 0) hosts_str += ", ";
+            hosts_str += "rank" + std::to_string(i) + "=" + host;
+        }
+        
+        printf("Hosts: %s\n", hosts_str.c_str());
+        printf("Unique nodes: \n");
+        for (const auto& host : unique_hosts) {
+            printf(" - %s\n", host.c_str());
+        }
+        
         benchmark::AddCustomContext("MPI_COMM_SIZE", std::to_string(size));
-        benchmark::AddCustomContext("Strategy", "Row-wise + OpenMP");
+        benchmark::AddCustomContext("processes", hosts_str);
+        // Add count and comma-separated list of unique hostnames to benchmark context
+        benchmark::AddCustomContext("node_number", std::to_string(unique_hosts.size()));
+        std::string unique_hosts_str;
+        for (auto it = unique_hosts.begin(); it != unique_hosts.end(); ++it) {
+            if (it != unique_hosts.begin()) unique_hosts_str += ", ";
+            unique_hosts_str += *it;
+        }
+        benchmark::AddCustomContext("node_names", unique_hosts_str);
         benchmark::AddCustomContext("OMP_NUM_THREADS", std::to_string(num_threads));
     }
 }
@@ -67,4 +105,4 @@ void MAIN_INIT(int argc, char** argv) {
 
 BENCHMARK_MATMUL_HYBRID_BASELINE()
 
-CUSTOM_MPI_BENCHMARK_MAIN();
+CUSTOM_HYBRID_BENCHMARK_MAIN();

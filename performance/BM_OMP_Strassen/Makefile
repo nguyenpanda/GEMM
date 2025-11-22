@@ -7,16 +7,17 @@ include ./.env
 # Enable OpenMP
 MACRO += -DOMP_ENABLE
 
+MACRO += -DDEBUG_MODE
 # Enable MPI
-MACRO += -DMPI_ENABLE
+# MACRO += -DMPI_ENABLE
 
-# MPI flags (detected from mpicxx --showme)
-MPI_INCLUDE = -I/usr/include/openmpi-x86_64
-MPI_LIBS = -L/usr/lib64/openmpi/lib -lmpi_cxx -lmpi
+# # MPI flags (detected from mpicxx --showme)
+# MPI_INCLUDE = -I/usr/lib/x86_64-linux-gnu/openmpi/include -I/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi
+# MPI_LIBS = -L/usr/lib/x86_64-linux-gnu/openmpi/lib -lmpi_cxx -lmpi
 
-# Add MPI includes and libs
-EXTRA_CXXFLAGS += $(MPI_INCLUDE)
-LDFLAGS += $(MPI_LIBS)
+# # Add MPI includes and libs
+# EXTRA_CXXFLAGS += $(MPI_INCLUDE)
+# LDFLAGS += $(MPI_LIBS)
 
 # Disable Auto-Vectorize
 # EXTRA_CXXFLAGS += -fno-vectorize -fno-slp-vectorize
