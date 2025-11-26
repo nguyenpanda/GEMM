@@ -5,11 +5,12 @@ DIR = $(CURDIR)
 include ./.env
 
 # Enable OpenMP (only for hybrid/grid benchmarks, not baseline)
-MACRO += -DOMP_ENABLE
-
+# MACRO += -DOMP_ENABLE
+MACRO += -DDEBUG_MODE
 # Enable MPI
-MACRO += -DUSE_MPI
+MACRO += -DMPI_ENABLE
 
+CXX := clang++
 # Special handling for baseline: disable OpenMP
 # The baseline benchmark is pure MPI only and doesn't use OpenMP
 # Compiling with OpenMP enabled causes runtime errors when MPI processes
@@ -19,18 +20,18 @@ BASELINE_CXXFLAGS := $(filter-out -fopenmp,$(EXTRA_CXXFLAGS))
 BASELINE_LDFLAGS := $(filter-out -lomp,$(LDFLAGS))
 
 # MPI flags (detected from mpicxx --showme)
-MPI_INCLUDE = -I/usr/lib/x86_64-linux-gnu/openmpi/include -I/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi
-MPI_LIBS = -L/usr/lib/x86_64-linux-gnu/openmpi/lib -lmpi_cxx -lmpi
+MPI_INCLUDE = -I/usr/include/openmpi-x86_64
+MPI_LIBS = -L/usr/lib64/openmpi/lib/ -lmpi_cxx -lmpi
 
 # Add MPI includes and libs
 EXTRA_CXXFLAGS += $(MPI_INCLUDE)
 LDFLAGS += $(MPI_LIBS)
 
 # Disable Auto-Vectorize
-# EXTRA_CXXFLAGS += -fno-vectorize -fno-slp-vectorize
+EXTRA_CXXFLAGS += -fno-vectorize -fno-slp-vectorize
 
 # Order
-# MACRO += -DMATMUL_ORDER=2
+MACRO += -DMATMUL_ORDER=2
 # MACRO += -DPRECISION_MODE
 
 # Allow SIMD instruction
@@ -44,6 +45,6 @@ EXTRA_CXXFLAGS += -Rpass=vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=
 include ../Makefile
 
 # Override compile rule for baseline (no OpenMP)
-$(BUILD)/BM_MatMul_MPI_Baseline.exe: $(DIR)/BM_MatMul_MPI_Grid.cpp $(ROOT)/performance/Makefile $(DIR)/Makefile
+$(BUILD)/BM_MatMul_MPI_Grid.exe: $(DIR)/BM_MatMul_MPI_Grid.cpp $(ROOT)/performance/Makefile $(DIR)/Makefile
 	@echo -e "$(YELLOW)Compiling baseline WITHOUT OpenMP...$(RESET)"
-	$(CXX) $(WARNING) $(BASELINE_MACRO) -std=c++17 -O3 $(BASELINE_CXXFLAGS) $(MPI_INCLUDE) $(INCLUDES) -MMD -MP $< -o $@ -lbenchmark -lpthread $(MPI_LIBS)
+	$(CXX) $(WARNING) $(BASELINE_MACRO) -std=c++17 -O3 $(BASELINE_CXXFLAGS) $(MPI_INCLUDE) $(INCLUDES) -MMD -MP $< -o $@ -lbenchmark -lpthread $(MPI_LIBS) --benchmark_iterations=1

@@ -22,6 +22,7 @@ int INIT_METADATA() {
 
 	MUL_RECURSIVE_THRESHOLD = static_cast<size_t>(atoi(getenv("MUL_RECURSIVE_THRESHOLD")));
 	ufunc::matmul::OmpForkJoin<T>::set_threshold(MUL_RECURSIVE_THRESHOLD);
+	ufunc::matmul::OmpStrassen<float>::set_threshold(MUL_RECURSIVE_THRESHOLD);
 	printf("MUL_RECURSIVE_THRESHOLD = %zu\n", MUL_RECURSIVE_THRESHOLD);
 
 	printf("PRECISION_MODE = %s, MODE = %d\n", PRECISION_STATUS, PRECISION_MODE);

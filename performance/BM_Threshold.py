@@ -73,7 +73,7 @@ def plot_heat_map():
         temp[mask] = 0
         _max_value(temp, 'green', 2)
         
-    ax.set_title(f'Relative Speedup per Matrix Size (N) for Fork-Join {BM_Parser.json_file.stem.split('-')[0]}')
+    ax.set_title(f"Relative Speedup per Matrix Size (N) for {BM_Parser.json_file.stem.split('-')[0]}")
     if args.legend:
         box = ax.get_position()
         ax.set_position((box.x0, box.y0 + box.height * 0.1, box.width, box.height * 0.9))

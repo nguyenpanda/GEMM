@@ -21,8 +21,8 @@ ifeq ($(OS), Darwin) # MacOS
 		LDFLAGS		+= -lomp -L/usr/local/opt/libomp/lib
 	endif
 else # Linux distribution
-	CXXFLAGS	+= -fopenmp
-	LDFLAGS		+= 
+	CXXFLAGS	+= 
+	LDFLAGS		+= -fopenmp
 endif
 
 # Arguments
@@ -72,10 +72,10 @@ test: ### Use for debugging
 	@echo -e "   DEPENDS:" $(DEPENDS)
 
 $(EXE_FILES): $(OBJ_FILES)
-	$(CXX) $(WARNING) $(LDFLAGS) $^ -o $@
+	$(CXX) $(WARNING) $^ -o $@ $(LDFLAGS)
 
 $(BUILD)/%.o: $(DIR)/%.cpp $(ROOT)/Makefile $(DIR)/Makefile
-	$(CXX) $(WARNING) $(MACRO) $(CXXFLAGS) $(INCLUDES) -MMD -MP -c $< -o $@
+	$(CXX) $(WARNING) $(MACRO) $(CXXFLAGS) $(INCLUDES) -MMD -MP -c $< -o $@ $(LDFLAGS)
 
 .PHONY: compile
 compile: _directories $(EXE_FILES) ### Compile

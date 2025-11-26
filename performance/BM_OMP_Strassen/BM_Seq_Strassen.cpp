@@ -2,9 +2,8 @@
 
 using namespace elementwise_SplittableMatrix;
 
-
-#define MIN_RANGE 1 << 2
-#define MAX_RANGE 1 << 11
+#define MIN_RANGE 1 << 5
+#define MAX_RANGE 1 << 5
 #define BENCHMARK_APPLY()           \
     RangeMultiplier(2)              \
     ->MeasureProcessCPUTime()       \
@@ -24,7 +23,6 @@ void MAIN_INIT(int argc, char** argv) {
     benchmark::AddCustomContext("OMP_NUM_THREADS", OMP_ENABLE ? std::to_string(omp_get_max_threads()) : "-1");
 }
 
-
 #define THRESHOLD_LIST \
     X(2)               \
     X(4)               \
@@ -38,16 +36,16 @@ void MAIN_INIT(int argc, char** argv) {
     X(1024)            \
     X(2048)            \
 
-    
+
 #define BENCHMARK_FORKJOIN_THRESHOLD(THRESHOLD)                             \
-    BENCHMARK_DEFINE_F(BinaryFixture, BM_OMP_Strassen_T##THRESHOLD)         \
+    BENCHMARK_DEFINE_F(BinaryFixture, BM_Seq_Strassen_T##THRESHOLD)         \
     (benchmark::State& state) {                                             \
-        ufunc::matmul::OmpStrassen<float>::set_threshold(THRESHOLD);       \
+        ufunc::matmul::SeqStrassen<float>::set_threshold(THRESHOLD);       \
         for (auto _ : state) {                                              \
-            ufunc::matmul::OmpStrassen<float>::operate(*out, *lhs, *rhs);   \
+            ufunc::matmul::SeqStrassen<float>::operate(*out, *lhs, *rhs);                                                                  \
     }                                                                       \
     }                                                                       \
-    BENCHMARK_REGISTER_F(BinaryFixture, BM_OMP_Strassen_T##THRESHOLD)->BENCHMARK_APPLY();
+    BENCHMARK_REGISTER_F(BinaryFixture, BM_Seq_Strassen_T##THRESHOLD)->BENCHMARK_APPLY();
 
 #define X(v) BENCHMARK_FORKJOIN_THRESHOLD(v);
     THRESHOLD_LIST

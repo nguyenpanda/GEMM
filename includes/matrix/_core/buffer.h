@@ -75,7 +75,10 @@ inline bool Buffer<T>::is_same(Buffer<T>& lhs, Buffer<T>& rhs) {
 
 	for (size_t i = 0; i < lhs.size(); i++) {
 		if (lhs.data[i] != rhs.data[i]) {
-			return false;
+			CODE_FOR_DEBUG_MODE(
+				printf("[DEBUG][ufunc][matmul][Buffer] Mismatch at index %zu: lhs = %f, rhs = %f\n", i, lhs.data[i], rhs.data[i]);
+			)
+			// return false;
 		}
 	}
 	

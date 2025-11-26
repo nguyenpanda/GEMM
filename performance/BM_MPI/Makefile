@@ -8,7 +8,7 @@ include ./.env
 MACRO += -DOMP_ENABLE
 
 # Enable MPI
-MACRO += -DUSE_MPI
+MACRO += -DMPI_ENABLE
 
 # Special handling for baseline: disable OpenMP
 # The baseline benchmark is pure MPI only and doesn't use OpenMP

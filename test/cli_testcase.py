@@ -15,19 +15,19 @@ class SingleTest(CLITestCase):
     
     def logging_info(self):
         super().logging_info()
-        print(green(f'{self.objs['lhs'].shape}'))
-        print(green(f'{self.objs['rhs'].shape}'))
-        print(green(f'{self.ufunc}'))
+        print(green(f"{self.objs['lhs'].shape}"))
+        print(green(f"{self.objs['rhs'].shape}"))
+        print(green(f"{self.ufunc}"))
                 
         print(yellow('Out'))
         print(self.objs['out'])
         print(yellow('Expected Output'))
         print(self.objs['expected_out'])
         
-        print(f'         lhs[0, 0] = {self.objs['lhs'][0, 0]:.10f}')
-        print(f'         rhs[0, 0] = {self.objs['rhs'][0, 0]:.10f}')
-        print(f'         out[0, 0] = {self.objs['out'][0, 0]:.10f}')
-        print(f'Expected out[0, 0] = {self.objs['expected_out'][0, 0]:.10f}')
+        print(f"         lhs[0, 0] = {self.objs['lhs'][0, 0]:.10f}")
+        print(f"         rhs[0, 0] = {self.objs['rhs'][0, 0]:.10f}")
+        print(f"         out[0, 0] = {self.objs['out'][0, 0]:.10f}")
+        print(f"Expected out[0, 0] = {self.objs['expected_out'][0, 0]:.10f}")
         return self
     
     def plot_diff(self):

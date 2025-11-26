@@ -2,7 +2,7 @@
 #define MATRIX_MPI_H
 
 // MPI matrix operations are integrated into ufunc/matmul.h
-// Include ufunc header which contains MPIGridForkJoin when USE_MPI is defined
+// Include ufunc header which contains MPIGridForkJoin when MPI_ENABLE is defined
 #include "ufunc/matmul.h"
 
 // Alias for backward compatibility

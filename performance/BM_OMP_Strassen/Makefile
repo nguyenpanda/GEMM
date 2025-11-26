@@ -9,7 +9,7 @@ MACRO += -DOMP_ENABLE
 
 MACRO += -DDEBUG_MODE
 # Enable MPI
-# MACRO += -DUSE_MPI
+# MACRO += -DMPI_ENABLE
 
 # # MPI flags (detected from mpicxx --showme)
 # MPI_INCLUDE = -I/usr/lib/x86_64-linux-gnu/openmpi/include -I/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi

@@ -4,7 +4,7 @@
 #include <benchmark/benchmark.h>
 #include <chrono>
 #include <cmath>
-#include <openmpi/mpi.h>
+#include <mpi.h>
 #include <vector>
 
 // Matrix class from fj_mpi_grid.cpp
