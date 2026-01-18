@@ -1,8 +1,10 @@
-CXX			:= clang++
+include ./.env
+DIR = $(CURDIR)
+
+CXX			:= nvcc
 EXECUTE		:= 
 MPI_NP		:= 1
 HOSTFILE	:=
-OMP_NUM_THREADS	:= 
 
 # Makefile
 ROOT 			:= $(abspath $(dir $(abspath $(dir $(DIR)))))
@@ -12,26 +14,16 @@ LOGGING			:= $(DIR)/log
 # OS
 OS				:= $(shell uname -s)
 
-# OpenMP
-ifeq ($(OS), Darwin) # MacOS
-	INCLUDES	+= -I/usr/local/opt/libomp/include
-	CXXFLAGS	+= -Xpreprocessor -fopenmp
-	LDFLAGS		+= -lomp -L/usr/local/opt/libomp/lib
-else # Linux distribution
-	CXXFLAGS	+= -fopenmp 
-	LDFLAGS		+= -lpthread
-endif
-
 # Arguments
-MACRO		+= $(EXTRA_MACRO)
-CXXFLAGS	+= $(EXTRA_CXXFLAGS) -std=c++17 -O3
+MACRO		+= $(EXTRA_MACRO) -DOMP_ENABLE
+CXXFLAGS	+= $(EXTRA_CXXFLAGS) -std=c++17 -O3 -Xcompiler="-fopenmp"
 INCLUDES	+= -I$(ROOT)/includes
-WARNING		+= -Wall -Wextra
-LDFLAGS		+= -lbenchmark
+WARNING		+=
+LDFLAGS		+= -lbenchmark -lpthread
 
-SRC_FILES	+= $(wildcard $(DIR)/*.cpp)
-DEPENDS 	:= $(patsubst $(DIR)/%.cpp, $(BUILD)/%.d, $(SRC_FILES))
-EXE_FILES	:= $(patsubst $(DIR)/%.cpp, $(BUILD)/%.exe, $(SRC_FILES))
+SRC_FILES	+= $(wildcard $(DIR)/*.cu)
+DEPENDS 	:= $(patsubst $(DIR)/%.cu, $(BUILD)/%.d, $(SRC_FILES))
+EXE_FILES	:= $(patsubst $(DIR)/%.cu, $(BUILD)/%.exe, $(SRC_FILES))
 
 RED			:= \033[1;91m
 GREEN		:= \033[1;92m
@@ -59,7 +51,7 @@ $(eval BENCHMARK_OUT_FILE := $(LOGGING)/$(basename $(notdir $(1)))-$(shell date 
 @if [ $(MPI_NP) -gt 1 ]; then \
 	if [ -n "$(HOSTFILE)" ]; then \
 		if [ -n "$(OMP_NUM_THREADS)" ]; then \
-			OMP_NUM_THREADS=$(OMP_NUM_THREADS) mpirun -np $(MPI_NP) --bind-to none --hostfile $(HOSTFILE) $(abspath $(1)) --benchmark_out="$(BENCHMARK_OUT_FILE)"; \
+			OMP_NUM_THREADS=$(OMP_NUM_THREADS) mpirun -np $(MPI_NP) --hostfile $(HOSTFILE) $(abspath $(1)) --benchmark_out="$(BENCHMARK_OUT_FILE)"; \
 		else \
 			mpirun -np $(MPI_NP) --hostfile $(HOSTFILE) $(abspath $(1)) --benchmark_out="$(BENCHMARK_OUT_FILE)"; \
 		fi; \
@@ -99,7 +91,7 @@ test: ### Use for debugging
 	@echo -e "   LDFLAGS:" $(LDFLAGS)
 	@echo -e "   DEPENDS:" $(DEPENDS)
 
-$(BUILD)/%.exe: $(DIR)/%.cpp $(ROOT)/performance/Makefile $(DIR)/Makefile
+$(BUILD)/%.exe: $(DIR)/%.cu $(ROOT)/performance/Makefile $(DIR)/Makefile
 	$(CXX) $(WARNING) $(MACRO) $(CXXFLAGS) $(INCLUDES) -MMD -MP $< -o $@ $(LDFLAGS)
 
 .PHONY: compile

@@ -19,8 +19,8 @@ BASELINE_CXXFLAGS := $(filter-out -fopenmp,$(EXTRA_CXXFLAGS))
 BASELINE_LDFLAGS := $(filter-out -lomp,$(LDFLAGS))
 
 # MPI flags (detected from mpicxx --showme)
-MPI_INCLUDE = -I/usr/lib/x86_64-linux-gnu/openmpi/include -I/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi
-MPI_LIBS = -L/usr/lib/x86_64-linux-gnu/openmpi/lib -lmpi_cxx -lmpi
+MPI_INCLUDE = -I/usr/include/openmpi-x86_64
+MPI_LIBS = -L/usr/lib64/openmpi/lib -lmpi_cxx -lmpi
 
 # Add MPI includes and libs
 EXTRA_CXXFLAGS += $(MPI_INCLUDE)
@@ -46,4 +46,4 @@ include ../Makefile
 # Override compile rule for baseline (no OpenMP)
 $(BUILD)/BM_MatMul_MPI_Baseline.exe: $(DIR)/BM_MatMul_MPI_Baseline.cpp $(ROOT)/performance/Makefile $(DIR)/Makefile
 	@echo -e "$(YELLOW)Compiling baseline WITHOUT OpenMP...$(RESET)"
-	$(CXX) $(WARNING) $(BASELINE_MACRO) -std=c++23 -O3 $(BASELINE_CXXFLAGS) $(MPI_INCLUDE) $(INCLUDES) -MMD -MP $< -o $@ -lbenchmark -lpthread $(MPI_LIBS)
+	$(CXX) $(WARNING) $(BASELINE_MACRO) -std=c++17 -O3 $(BASELINE_CXXFLAGS) $(MPI_INCLUDE) $(INCLUDES) -MMD -MP $< -o $@ -lbenchmark -lpthread $(MPI_LIBS)

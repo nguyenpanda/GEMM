@@ -95,11 +95,10 @@ if __name__ == '__main__':
         'date',
         'host_name',
         'load_avg',
-		'OMP_ENABLE',
-    	'OMP_NUM_THREADS',
-    	'PRECISION_STATUS',
-    	'PRECISION_MODE',
-     	'MATMUL_ORDER',
+        'MPI_COMM_SIZE',
+        'node_names',
+        'processes',
+        'strategy',
 	])
     
     BM_Parser.parse([
@@ -132,20 +131,20 @@ if __name__ == '__main__':
     idxN = N.argsort()
     N = N[idxN]
     
-    real_time_df = pd.DataFrame(
-        np.array(real_time)[idxT][:, idxN], 
-        columns=N, index=T,
-    ) \
-        .rename_axis('Threshold', axis='index') \
-        .rename_axis('N', axis='columns')
+    # real_time_df = pd.DataFrame(
+    #     np.array(real_time)[idxT][:, idxN], 
+    #     columns=N, index=T,
+    # ) \
+    #     .rename_axis('Threshold', axis='index') \
+    #     .rename_axis('N', axis='columns')
         
-    pd.set_option('display.precision', 2)
-    if args.display_console:
-        print(real_time_df)
+    # pd.set_option('display.precision', 2)
+    # if args.display_console:
+    #     print(real_time_df)
     
-    plot_heat_map()
+    # plot_heat_map()
     
-    if args.show_img:
-        plt.show()
-    plt.close()
+    # if args.show_img:
+    #     plt.show()
+    # plt.close()
         

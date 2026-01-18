@@ -3,7 +3,7 @@
 using namespace elementwise_SplittableMatrix;
 
 #define MIN_RANGE 1 << 2
-#define MAX_RANGE 1 << 11
+#define MAX_RANGE 1 << 14
 #define BENCHMARK_APPLY()           \
     RangeMultiplier(2)              \
     ->MeasureProcessCPUTime()       \
@@ -46,12 +46,25 @@ BENCHMARK_REGISTER_F(BinaryFixture, BM_MatMul_Omp_Vanilla)
 	->BENCHMARK_APPLY();
 
 BENCHMARK_DEFINE_F(BinaryFixture, BM_MatMul_Omp_ForkJoin)(benchmark::State& state) {
+    ufunc::matmul::OmpForkJoin<float>::set_threshold(64); 
+    ufunc::addition::OmpForkJoin<float>::set_threshold(1 << 30); 
     for (auto _ : state) {
 		ufunc::matmul::OmpForkJoin<float>::operate(*out, *lhs, *rhs);
 	}
 }
 
 BENCHMARK_REGISTER_F(BinaryFixture, BM_MatMul_Omp_ForkJoin)
+	->BENCHMARK_APPLY();
+
+
+BENCHMARK_DEFINE_F(BinaryFixture, BM_MatMul_Omp_Strassen)(benchmark::State& state) {
+    ufunc::matmul::OmpStrassen<float>::set_threshold(32);
+    for (auto _ : state) {
+		ufunc::matmul::OmpStrassen<float>::operate(*out, *lhs, *rhs);
+	}
+}
+
+BENCHMARK_REGISTER_F(BinaryFixture, BM_MatMul_Omp_Strassen)
 	->BENCHMARK_APPLY();
 
 CUSTOM_BENCHMARK_MAIN();

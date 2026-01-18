@@ -1,10 +1,10 @@
-#ifndef MATRIX_UFUNC_ADD_H
-#define MATRIX_UFUNC_ADD_H
+#ifndef MATRIX_UFUNC_SUB_H
+#define MATRIX_UFUNC_SUB_H
 
 #include "../viewer.h"
 
 namespace ufunc {
-namespace addition {
+namespace substraction {
 
 template<class T>
 class Seq {
@@ -12,23 +12,11 @@ public:
 	static inline void operate(Buffer<T>& out, const Buffer<T>& lhs, const Buffer<T>& rhs) {
 		#pragma omp simd
 		for (size_t i = 0; i < out.size(); i++) {
-			out.data[i] = lhs.data[i] + rhs.data[i];
+			out.data[i] = lhs.data[i] - rhs.data[i];
 		}
 	}
 
 	static inline void operate(SplittableMatrix<T>& out, const SplittableMatrix<T>& lhs, const SplittableMatrix<T>& rhs)  {
-		for (size_t i = 0; i < out.rdim; i++) {
-			#pragma omp simd
-			for (size_t j = 0; j < out.cdim; j++) {
-				size_t out_idx = out.map2Dto1DIndex(i, j);
-				size_t lhs_idx = lhs.map2Dto1DIndex(i, j);
-				size_t rhs_idx = rhs.map2Dto1DIndex(i, j);
-				out.root->data[out_idx] = lhs.root->data[lhs_idx] + rhs.root->data[rhs_idx];
-			}
-		}
-	}
-
-	static inline void re_operate(SplittableMatrix<T>& out, const SplittableMatrix<T>& lhs, const SplittableMatrix<T>& rhs)  {
 		for (size_t i = 0; i < out.rdim; i++) {
 			#pragma omp simd
 			for (size_t j = 0; j < out.cdim; j++) {
@@ -50,7 +38,7 @@ public:
 		{
 			#pragma omp for simd
 			for (size_t i = 0; i < out.size(); i++) {
-				out.data[i] = lhs.data[i] + rhs.data[i];
+				out.data[i] = lhs.data[i] - rhs.data[i];
 			}
 		}
 	}
@@ -64,7 +52,7 @@ public:
 					size_t out_idx = out.map2Dto1DIndex(i, j);
 					size_t lhs_idx = lhs.map2Dto1DIndex(i, j);
 					size_t rhs_idx = rhs.map2Dto1DIndex(i, j);
-					out.root->data[out_idx] = lhs.root->data[lhs_idx] + rhs.root->data[rhs_idx];
+					out.root->data[out_idx] = lhs.root->data[lhs_idx] - rhs.root->data[rhs_idx];
 				}
 			}
 		}
@@ -105,7 +93,7 @@ protected:
 		CODE_FOR_DEBUG_MODE(, std::string format)
 	) {
 		CODE_FOR_DEBUG_MODE(printf(
-			"[ufunc][addition][OmpForkJoin] tid = \033[1;95m%d\033[0m " "format = \033[1;95m%-5s\033[0m, " "dim = \033[1;95m%6zu\033[0m, " "rDis = \033[1;95m%6zu\033[0m, " "cDis = \033[1;95m%6zu\033[0m\n", 
+			"[ufunc][substraction][OmpForkJoin] tid = \033[1;95m%d\033[0m " "format = \033[1;95m%-5s\033[0m, " "dim = \033[1;95m%6zu\033[0m, " "rDis = \033[1;95m%6zu\033[0m, " "cDis = \033[1;95m%6zu\033[0m\n", 
 			omp_get_thread_num(), format.c_str(), out.rdim, out.rDis / out.rdim, out.cDis / out.cdim);
 		)
 
@@ -117,7 +105,7 @@ protected:
 
 		OmpForkJoin<T>* tasks[4];
 
-		#pragma omp unroll
+		#pragma omp unroll full
 		for (int i = 0; i < 4; i++) {
 			// The following loop must iterate backward.
 			// This is because Nguyenpanda designed the ForkJoin model to execute tasks
@@ -129,7 +117,7 @@ protected:
 			);
 		}
 
-		#pragma omp unroll
+		#pragma omp unroll full
 		for (int i = 0; i < 4; ++i) {
 			CODE_FOR_DEBUG_MODE(std::string temp = format + std::to_string(3-i);)
 			#pragma omp task
@@ -140,7 +128,7 @@ protected:
 
 		#pragma omp taskwait
 
-		#pragma omp unroll
+		#pragma omp unroll full
 		for (int i = 0; i < 4; i++) {
 			delete tasks[i]->lhs;
 			delete tasks[i]->rhs;
@@ -173,7 +161,7 @@ public:
 };
 
 
-}; // namespace addition
+}; // namespace substraction
 }; // namespace ufunc
 
-#endif // MATRIX_UFUNC_ADD_H
+#endif // MATRIX_UFUNC_SUB_H
